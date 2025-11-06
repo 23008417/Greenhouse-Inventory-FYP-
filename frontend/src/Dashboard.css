@@ -1,0 +1,246 @@
+.dashboard-main {
+  flex-grow: 1;
+  padding: 1.5rem 2.5rem;
+  overflow-y: auto;
+  height: 100%; 
+  box-sizing: border-box;
+}
+
+.overview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.overview-header h2 {
+  margin: 0;
+  font-size: 1.75rem;
+  font-weight: 600;
+}
+
+.filters {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.filters button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.stat-cards {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.stat-card {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 1.25rem;
+}
+
+.card-title {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.card-value {
+  font-size: 2rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.card-change {
+  display: flex;
+  align-items: center;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.card-change.positive {
+  color: var(--green-500);
+}
+.card-change.negative {
+  color: var(--red-500);
+}
+.card-change svg {
+  margin-right: 0.25rem;
+}
+
+.performance-charts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.chart-card {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.chart-header h4 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+.chart-header span {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.chart-value {
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 1rem;
+}
+.chart-value strong {
+  font-size: 1.25rem;
+  font-weight: 600;
+  display: block;
+}
+.chart-value .chart-label {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  display: block;
+}
+
+.bottom-row {
+  display: grid;
+  grid-template-columns: 1.2fr 1.2fr 1fr;
+  gap: 1.5rem;
+  padding-bottom: 2rem;
+}
+
+.card {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+.card-header h4 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+.card-header button {
+  background: none;
+  border: none;
+  color: var(--blue-500);
+  font-weight: 500;
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+.card-header .card-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+.card-header .card-actions button {
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+}
+
+.capacity-list .capacity-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+}
+.item-info .location {
+  font-weight: 500;
+  display: block;
+}
+.item-info .system {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+.item-progress {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.progress-bar {
+  width: 100px;
+  height: 8px;
+  background: #e5e7eb;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.progress-bar div {
+  height: 100%;
+}
+.item-progress span {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  width: 50px;
+  text-align: right;
+}
+.item-progress .capacity-full {
+  color: var(--red-500);
+}
+
+.alerts-column {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.alert-list .alert-item {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border-color);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+.alert-list .alert-item:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+.alert-item .icon {
+  font-size: 1.25rem;
+}
+.alert-item .icon.green { color: var(--green-500); }
+.alert-item .icon.orange { color: var(--orange-500); }
+.alert-item .icon.red { color: var(--red-500); }
+.alert-item .arrow {
+  color: var(--text-secondary);
+  cursor: pointer;
+}

@@ -1,0 +1,90 @@
+.global-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.5rem 0 1.5rem;
+  height: 65px;
+  background-color: var(--bg-primary);
+  border-bottom: 1px solid var(--border-color);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.logo-header {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  width: 240px;
+  padding-left: 1rem; 
+  box-sizing: border-box;
+}
+
+.logo-header h3 {
+  margin: 0;
+}
+
+.global-header .search-bar {
+  flex-grow: 1;
+  max-width: 400px;
+  display: flex;
+  align-items: center;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+}
+
+.global-header .search-bar svg {
+  color: var(--text-secondary);
+  margin-right: 0.5rem;
+}
+
+.global-header .search-bar input {
+  border: none;
+  outline: none;
+  font-size: 0.9rem;
+  width: 100%;
+  background: none;
+}
+
+.global-header .header-icons {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  color: var(--text-secondary);
+  justify-content: flex-end;
+}
+
+.global-header .header-icons svg {
+  font-size: 1.25rem;
+  cursor: pointer;
+}
+
+.global-header .profile-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.global-header .profile-circle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--blue-800);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.global-header .profile-logo-img {
+  width: 32px;
+  height: 32px;
+  border-radius: 51%;
+  object-fit: contain;  
+  background-color: #D1D1D1; 
+}
