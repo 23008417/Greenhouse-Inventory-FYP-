@@ -1,0 +1,65 @@
+.sidebar {
+    width: 240px;
+    background-color: var(--bg-primary);
+    border-right: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    height: 100%; /* Changed from 100vh */
+    box-sizing: border-box; 
+    flex-shrink: 0;
+  }
+  
+  .sidebar-menu {
+    list-style: none;
+    padding: 1rem;
+    margin: 0;
+    flex-grow: 1;
+    margin-top: 0.5rem; /* Added space at the top */
+  }
+  
+  .menu-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    border-radius: 6px;
+    margin-bottom: 0.25rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: background-color 0.2s, color 0.2s;
+  }
+  
+  .menu-item:hover {
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+  }
+  
+ 
+  .menu-item.active {
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+    font-weight: 600;
+  }
+  
+  .menu-item-content {
+    display: flex;
+    align-items: center;
+  }
+  
+  .menu-item-content svg {
+    margin-right: 0.75rem;
+    font-size: 1.25rem;
+    stroke-width: 2;
+  }
+  
+  .dropdown-icon {
+    font-size: 1rem;
+    color: var(--text-secondary);
+    transition: transform 0.2s;
+  }
+  
+  .dropdown-icon.open {
+    transform: rotate(180deg);
+  }
