@@ -1,18 +1,44 @@
-import React from 'react';
-import GlobalHeader from './GlobalHeader';
-import Sidebar from './Sidebar/Sidebar';       
-import Dashboard from './Dashboard/Dashboard';   
-import './Dashboard/Dashboard.css'; 
+import React, { useState } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+
+import DashboardLayout from './DashboardLayout';
+import Login from './Pages/Login';
+import Signup from './Pages/Signup';
+
+import './App.css';
+import './Pages/Auth.css';
+import './DashboardLayout.css';
 
 function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  const handleLogin = () => {
+    setIsAuthenticated(true);
+  };
+
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+  };
+
   return (
-    <div className="app-layout">
-      <GlobalHeader />
-      <div className="main-content">
-        <Sidebar />
-        <Dashboard />
-      </div>
-    </div>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/login" element={<Login onLogin={handleLogin} />} />
+        
+        <Route path="/signup" element={<Signup onLogin={handleLogin} />} />
+        
+        <Route 
+          path="/*" 
+          element={
+            isAuthenticated ? (
+              <DashboardLayout onLogout={handleLogout} />
+            ) : (
+              <Navigate to="/login" />
+            )
+          } 
+        />
+      </Routes>
+    </BrowserRouter>
   );
 }
 

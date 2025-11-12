@@ -4,7 +4,7 @@
     border-right: 1px solid var(--border-color);
     display: flex;
     flex-direction: column;
-    height: 100%; /* Changed from 100vh */
+    height: 100%; 
     box-sizing: border-box; 
     flex-shrink: 0;
   }
@@ -14,7 +14,7 @@
     padding: 1rem;
     margin: 0;
     flex-grow: 1;
-    margin-top: 0.5rem; /* Added space at the top */
+    margin-top: 0.5rem; 
   }
   
   .menu-item {
@@ -28,6 +28,7 @@
     font-weight: 500;
     color: var(--text-secondary);
     cursor: pointer;
+    text-decoration: none;
     transition: background-color 0.2s, color 0.2s;
   }
   
@@ -36,7 +37,6 @@
     color: var(--text-primary);
   }
   
- 
   .menu-item.active {
     background-color: var(--bg-secondary);
     color: var(--text-primary);

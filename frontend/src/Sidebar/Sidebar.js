@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { 
   FiHome, 
   FiPackage, 
@@ -10,82 +11,45 @@ import {
 } from 'react-icons/fi';
 import './Sidebar.css';
 
-const NavItem = ({ icon, children, hasDropdown, active, onClick }) => {
-  const [isOpen, setIsOpen] = useState(false);
-
-  const handleClick = () => {
-    if (hasDropdown) {
-      setIsOpen(!isOpen);
-    }
-    onClick();
-  };
+const NavItem = ({ icon, children, to }) => {
+  const location = useLocation();
+  const active = location.pathname === to;
 
   return (
-    <li 
-      className={`menu-item ${active ? 'active' : ''}`}
-      onClick={handleClick}
-    >
+    <Link to={to} className={`menu-item ${active ? 'active' : ''}`}>
       <div className="menu-item-content">
         {icon}
         <span>{children}</span>
       </div>
-      {hasDropdown && <FiChevronDown className={`dropdown-icon ${isOpen ? 'open' : ''}`} />}
-    </li>
+    </Link>
   );
 };
 
 const Sidebar = () => {
-  const [activeItem, setActiveItem] = useState('Home');
-
   return (
     <nav className="sidebar">
       <ul className="sidebar-menu">
-        <NavItem 
-          icon={<FiHome />} 
-          active={activeItem === 'Home'}
-          onClick={() => setActiveItem('Home')}
-        >
+        <NavItem to="/" icon={<FiHome />}>
           Home
         </NavItem>
         
-        <NavItem 
-          icon={<FiPackage />} 
-          hasDropdown 
-          active={activeItem === 'Plants'}
-          onClick={() => setActiveItem('Plants')}
-        >
+        <NavItem to="/plants" icon={<FiPackage />}>
           Plants
         </NavItem>
 
-        <NavItem 
-          icon={<FiShoppingCart />} 
-          active={activeItem === 'Orders'}
-          onClick={() => setActiveItem('Orders')}
-        >
+        <NavItem to="/orders" icon={<FiShoppingCart />}>
           Orders
         </NavItem>
 
-        <NavItem 
-          icon={<FiUsers />} 
-          active={activeItem === 'Customers'}
-          onClick={() => setActiveItem('Customers')}
-        >
+        <NavItem to="/customers" icon={<FiUsers />}>
           Customers
         </NavItem>
 
-        <NavItem 
-          icon={<FiBarChart2 />} 
-          active={activeItem === 'Reports'}
-          onClick={() => setActiveItem('Reports')}
-        >
+        <NavItem to="/reports" icon={<FiBarChart2 />}>
           Reports
         </NavItem>
 
-        <NavItem 
-          icon={<FiShoppingBag />} 
-          active={activeItem === 'Store'}
-          onClick={() => setActiveItem('Store')}
-        >
+        <NavItem to="/store" icon={<FiShoppingBag />}>
           Store
         </NavItem>
       </ul>

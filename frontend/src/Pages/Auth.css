@@ -1,0 +1,178 @@
+.auth-background {
+  background-color: #f9fafb;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.auth-header {
+  width: 100%;
+  padding: 1.5rem 2.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  box-sizing: border-box;
+}
+
+/* This is the new rule for your cropflow.png logo */
+.auth-logo {
+  width: 32px;
+  height: 32px;
+}
+
+/* The old .auth-header svg rule has been removed */
+
+.auth-card {
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 2.5rem;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  margin-top: 2rem;
+}
+
+.auth-card h2 {
+  font-size: 1.75rem;
+  font-weight: 600;
+  text-align: center;
+  margin-top: 0;
+  margin-bottom: 2rem;
+}
+
+.auth-form .form-group {
+  margin-bottom: 1.25rem;
+}
+
+.auth-form label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  color: var(--text-secondary);
+}
+
+.auth-form .form-group label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.auth-form input[type="email"],
+.auth-form input[type="password"],
+.auth-form input[type="text"] {
+  width: 100%;
+  padding: 0.75rem;
+  font-size: 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  box-sizing: border-box;
+}
+
+.auth-form .form-row {
+  display: flex;
+  gap: 1rem;
+}
+
+.auth-form .form-row .form-group {
+  flex: 1;
+}
+
+.auth-form .form-options {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.auth-form .form-options label {
+  margin: 0;
+  font-weight: 400;
+}
+
+.auth-form .forgot-link {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--blue-500);
+  text-decoration: none;
+}
+.auth-form .forgot-link:hover {
+  text-decoration: underline;
+}
+
+.auth-button {
+  width: 100%;
+  padding: 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--green-700);
+  background-color: #d1fae5;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+.auth-button:hover {
+  background-color: #a7f3d0;
+}
+
+.separator {
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin: 1.5rem 0;
+  position: relative;
+}
+.separator::before,
+.separator::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 40%;
+  height: 1px;
+  background-color: var(--border-color);
+}
+.separator::before { left: 0; }
+.separator::after { right: 0; }
+
+.google-button {
+  width: 100%;
+  padding: 0.75rem;
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+.google-button svg {
+  font-size: 1.25rem;
+}
+.google-button:hover {
+  background-color: var(--bg-secondary);
+}
+
+.auth-footer-link {
+  text-align: center;
+  margin-top: 1.5rem;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+.auth-footer-link a {
+  font-weight: 500;
+  color: var(--blue-500);
+  text-decoration: none;
+}
+.auth-footer-link a:hover {
+  text-decoration: underline;
+}

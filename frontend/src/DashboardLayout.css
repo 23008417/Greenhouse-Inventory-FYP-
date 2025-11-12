@@ -1,0 +1,11 @@
+.app-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.main-content {
+  display: flex;
+  flex: 1; /* Fill remaining vertical space */
+  overflow: hidden; /* Prevent double scrollbars */
+}

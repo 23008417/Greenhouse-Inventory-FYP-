@@ -6,12 +6,12 @@
   --border-color: #e5e7eb;
   --bg-primary: #ffffff;
   --bg-secondary: #f9fafb;
-  --green-500: #17825A;
+  --green-500: #10b981;
+  --green-700: #047857;
   --red-500: #ef4444;
   --orange-500: #f59e0b;
   --blue-500: #3b82f6;
   --blue-800: #1e40af;
-  --green-800: #047857;
 }
 
 body {
@@ -23,16 +23,4 @@ body {
   -moz-osx-font-smoothing: grayscale;
   background-color: var(--bg-secondary);
   color: var(--text-primary);
-}
-
-.app-layout {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-}
-
-.main-content {
-  display: flex;
-  flex: 1; 
-  overflow: hidden; 
 }
