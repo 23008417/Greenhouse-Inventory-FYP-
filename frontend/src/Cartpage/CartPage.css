@@ -1,0 +1,158 @@
+/* MAIN CONTAINER */
+.modern-cart-container {
+  padding: 40px 20px;
+  max-width: 1100px;
+  margin: auto;
+}
+
+.modern-cart-title {
+  font-size: 2.2rem;
+  font-weight: 700;
+  margin-bottom: 25px;
+  text-align: center;
+}
+
+/* EMPTY CART */
+.modern-empty-cart {
+  text-align: center;
+  margin-top: 60px;
+}
+
+.modern-empty-cart p {
+  font-size: 1.2rem;
+  color: #555;
+  margin-bottom: 20px;
+}
+
+/* GRID LAYOUT */
+.modern-cart-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 25px;
+}
+
+@media (max-width: 900px) {
+  .modern-cart-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* CART ITEMS */
+.modern-cart-items {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.modern-cart-item {
+  display: flex;
+  align-items: center;
+  background: #fff;
+  padding: 18px;
+  border-radius: 14px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.modern-cart-item:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.15);
+}
+
+/* PRODUCT IMAGE */
+.modern-cart-img {
+  width: 95px;
+  height: 95px;
+  object-fit: cover;
+  border-radius: 12px;
+  margin-right: 20px;
+}
+
+/* PRODUCT INFO */
+.modern-cart-info h3 {
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+.modern-cart-price {
+  margin-top: 6px;
+  font-size: 1rem;
+  color: #1d8f2c;
+  font-weight: 600;
+}
+
+/* REMOVE BUTTON */
+.modern-remove-btn {
+  margin-left: auto;
+  background: #ff4d4d;
+  color: white;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.modern-remove-btn:hover {
+  background: #e04545;
+}
+
+/* SUMMARY BOX */
+.modern-summary-box {
+  padding: 25px;
+  background: #fafafa;
+  border-radius: 16px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  position: sticky;
+  top: 30px;
+  height: fit-content;
+}
+
+.modern-summary-box h2 {
+  margin-bottom: 15px;
+  font-size: 1.5rem;
+}
+
+.summary-total-label {
+  margin-top: 10px;
+  font-size: 1rem;
+  color: #666;
+}
+
+.summary-total-price {
+  font-size: 1.7rem;
+  font-weight: 700;
+  margin-bottom: 20px;
+  color: #1d8f2c;
+}
+
+/* BUTTONS */
+.checkout-btn,
+.back-btn {
+  width: 100%;
+  padding: 12px;
+  border-radius: 10px;
+  font-size: 1rem;
+  margin-top: 12px;
+  cursor: pointer;
+  transition: 0.3s;
+  border: none;
+}
+
+.checkout-btn {
+  background: #1d8f2c;
+  color: white;
+}
+
+.checkout-btn:hover {
+  background: #187a25;
+}
+
+.back-btn {
+  background: #ddd;
+}
+
+.back-btn:hover {
+  background: #c9c9c9;
+}

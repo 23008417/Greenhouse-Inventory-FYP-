@@ -6,6 +6,8 @@ import Login from './Pages/Login';
 import Signup from './Pages/Signup';
 import LandingPage from './Landingpage/LandingPage'; // Adjusted to capital 'P' in folder (confirm your actual casing)
 import AdminLogin from './Pages/AdminLogin';
+import StorePage from './Storepage/StorePage';
+import CartPage from './Cartpage/CartPage';
 
 import './App.css';
 import './Pages/Auth.css';
@@ -13,6 +15,7 @@ import './DashboardLayout.css';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [cartItems, setCartItems] = useState([]);
 
   const handleLogin = () => {
     setIsAuthenticated(true);
@@ -45,7 +48,36 @@ function App() {
             )
           } 
         />
-        
+
+        <Route 
+          path="/storepage/*" 
+          element={
+            isAuthenticated ? (
+              <StorePage 
+                onLogout={handleLogout}
+                cartItems={cartItems}
+                setCartItems={setCartItems}
+              />
+            ) : (
+              <Navigate to="/" />
+           )
+         }
+       />
+        <Route
+          path="/cartpage"
+          element={
+            isAuthenticated ? (
+              <CartPage
+                cartItems={cartItems}
+                setCartItems={setCartItems}
+              />
+            ) : (
+              <Navigate to="/storepage" />
+            )
+          }
+        />
+
+       
         {/* Optional: Redirect any other paths to landing */}
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>

@@ -9,7 +9,7 @@ const Login = ({ onLogin }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     onLogin();
-    navigate('/');
+    navigate('/storepage');
   };
 
   return (
