@@ -4,7 +4,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import DashboardLayout from './DashboardLayout';
 import Login from './Pages/Login';
 import Signup from './Pages/Signup';
-import LandingPage from './Landingpage/LandingPage'; // Adjusted to capital 'P' in folder (confirm your actual casing)
+import LandingPage from './Landingpage/LandingPage'; 
 import AdminLogin from './Pages/AdminLogin';
 import StorePage from './Storepage/StorePage';
 import CartPage from './Cartpage/CartPage';
@@ -44,7 +44,7 @@ function App() {
             isAuthenticated ? (
               <DashboardLayout onLogout={handleLogout} />
             ) : (
-              <Navigate to="/" /> // Redirect to landing if not authenticated
+              <Navigate to="/" /> 
             )
           } 
         />
