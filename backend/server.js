@@ -154,7 +154,7 @@ if (process.env.NODE_ENV === 'production') {
   app.use(express.static(buildPath));
 
   // Handle SPA: Serve index.html for all non-API requests
-  app.get('*', (req, res) => {
+  app.get('/*', (req, res) => {
     if (req.path.startsWith('/api')) {
       return res.status(404).json({ error: 'Not found' });
     }
