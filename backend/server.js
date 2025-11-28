@@ -1,13 +1,14 @@
+// server.js — FINAL VERSION FOR first_name + last_name columns
 require('dotenv').config();
 const express = require('express');
 const mysql = require('mysql2/promise');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
-const path = require('path');  
+const path = require('path');  // Added for static serving
 
 const app = express();
-app.use(cors({ origin: true, credentials: true }));  
+app.use(cors({ origin: true, credentials: true }));  // In prod, tighten to your domain if needed
 app.use(express.json());
 
 // Database connection
@@ -154,7 +155,7 @@ if (process.env.NODE_ENV === 'production') {
   app.use(express.static(buildPath));
 
   // Handle SPA: Serve index.html for all non-API requests
-  app.get('/*', (req, res) => {
+  app.get('/*catchAll', (req, res) => {  // ← Updated syntax
     if (req.path.startsWith('/api')) {
       return res.status(404).json({ error: 'Not found' });
     }
