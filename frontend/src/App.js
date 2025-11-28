@@ -1,84 +1,88 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-
 import DashboardLayout from './DashboardLayout';
 import Login from './Pages/Login';
 import Signup from './Pages/Signup';
-import LandingPage from './Landingpage/LandingPage'; 
+import LandingPage from './Landingpage/LandingPage';
 import AdminLogin from './Pages/AdminLogin';
 import StorePage from './Storepage/StorePage';
 import CartPage from './Cartpage/CartPage';
-
+import ProtectedRoute from './ProtectedRoute';
 import './App.css';
 import './Pages/Auth.css';
 import './DashboardLayout.css';
 
-function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [cartItems, setCartItems] = useState([]);
+const API_URL = process.env.REACT_APP_API_URL || '';  // Relative for prod
 
-  const handleLogin = () => {
-    setIsAuthenticated(true);
+function App() {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [cartItems, setCartItems] = useState([]);  // ← New: Shared cart state
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+
+    fetch(`${API_URL}/api/auth/me`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.user) setUser(data.user);
+      })
+      .catch(() => localStorage.removeItem('token'))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const handleLogin = (token, userData) => {
+    localStorage.setItem('token', token);
+    setUser(userData);
   };
 
   const handleLogout = () => {
-    setIsAuthenticated(false);
+    localStorage.removeItem('token');
+    setUser(null);
+    setCartItems([]);  // Optional: Clear cart on logout
   };
+
+  if (loading) return <div style={{ padding: 20 }}>Loading...</div>;
 
   return (
     <BrowserRouter>
       <Routes>
-        {/* Set LandingPage as the root/landing page */}
         <Route path="/" element={<LandingPage />} />
-        
         <Route path="/login" element={<Login onLogin={handleLogin} />} />
-        
         <Route path="/signup" element={<Signup onLogin={handleLogin} />} />
+        <Route path="/admin-login" element={<AdminLogin onLogin={handleLogin} />} />
 
-        <Route path="/admin-login" element={<AdminLogin onLogin={handleLogin} />} /> {/* Standardized to hyphen */}
-        
-        {/* Protected dashboard routes */}
-        <Route 
-          path="/dashboard/*" 
+        <Route
+          path="/dashboard/*"
           element={
-            isAuthenticated ? (
-              <DashboardLayout onLogout={handleLogout} />
-            ) : (
-              <Navigate to="/" /> 
-            )
-          } 
+            <ProtectedRoute user={user} requiredRole="Admin">
+              <DashboardLayout onLogout={handleLogout} user={user} />
+            </ProtectedRoute>
+          }
         />
-
-        <Route 
-          path="/storepage/*" 
+        <Route
+          path="/storepage/*"
           element={
-            isAuthenticated ? (
-              <StorePage 
-                onLogout={handleLogout}
-                cartItems={cartItems}
-                setCartItems={setCartItems}
-              />
-            ) : (
-              <Navigate to="/" />
-           )
-         }
-       />
+            <ProtectedRoute user={user} requiredRole="Buyer">
+              <StorePage onLogout={handleLogout} user={user} cartItems={cartItems} setCartItems={setCartItems} />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/cartpage"
           element={
-            isAuthenticated ? (
-              <CartPage
-                cartItems={cartItems}
-                setCartItems={setCartItems}
-              />
-            ) : (
-              <Navigate to="/storepage" />
-            )
+            <ProtectedRoute user={user} requiredRole="Buyer">
+              <CartPage cartItems={cartItems} setCartItems={setCartItems} />
+            </ProtectedRoute>
           }
         />
 
-       
-        {/* Optional: Redirect any other paths to landing */}
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </BrowserRouter>
