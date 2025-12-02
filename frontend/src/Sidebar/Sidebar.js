@@ -65,7 +65,6 @@ const ExpandableNavItem = ({ icon, children, subItems }) => {
 
 const Sidebar = () => {
   const plantsSubItems = [
-    { label: 'Store listings', to: '/dashboard/plants/store-listings' },
     { label: 'Inventory', to: '/dashboard/plants/inventory' },
     { label: 'Growing systems', to: '/dashboard/plants/growing-systems' }
   ];

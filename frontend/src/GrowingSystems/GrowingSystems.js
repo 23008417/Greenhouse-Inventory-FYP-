@@ -1,27 +1,18 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { FiFilter, FiBarChart2, FiPlus, FiDownload, FiSearch } from 'react-icons/fi';
-import AddGrowingSystem from './AddGrowingSystem';
 import './GrowingSystems.css';
 
 const GrowingSystems = () => {
-  const [showAddModal, setShowAddModal] = useState(false);
+  const navigate = useNavigate();
 
   const handleAddSystem = () => {
-    setShowAddModal(true);
-  };
-
-  const handleCloseModal = () => {
-    setShowAddModal(false);
-  };
-
-  const handleSaveSystem = (systemData) => {
-    console.log('Saving system:', systemData);
-    setShowAddModal(false);
+    console.log('Navigating to add-system-type...');
+    navigate('/dashboard/plants/growing-systems/add-system-type');
   };
 
   return (
-    <>
-      <div className="growing-systems-page">
+    <div className="growing-systems-page">
         <div className="growing-systems-header">
           <h1>Growing systems</h1>
         </div>
@@ -96,14 +87,6 @@ const GrowingSystems = () => {
           </div>
         </div>
       </div>
-
-      {showAddModal && (
-        <AddGrowingSystem 
-          onClose={handleCloseModal}
-          onSave={handleSaveSystem}
-        />
-      )}
-    </>
   );
 };
 
