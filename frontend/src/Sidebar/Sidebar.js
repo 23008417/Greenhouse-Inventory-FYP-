@@ -81,19 +81,19 @@ const Sidebar = () => {
           Plants
         </ExpandableNavItem>
 
-        <NavItem to="/orders" icon={<FiShoppingCart />}>
+        <NavItem to="/dashboard/orders" icon={<FiShoppingCart />}>
           Orders
         </NavItem>
 
-        <NavItem to="/customers" icon={<FiUsers />}>
+        <NavItem to="/dashboard/customers" icon={<FiUsers />}>
           Customers
         </NavItem>
 
-        <NavItem to="/reports" icon={<FiBarChart2 />}>
+        <NavItem to="/dashboard/reports" icon={<FiBarChart2 />}>
           Reports
         </NavItem>
 
-        <NavItem to="/store" icon={<FiShoppingBag />}>
+        <NavItem to="/dashboard/store" icon={<FiShoppingBag />}>
           Store
         </NavItem>
       </ul>

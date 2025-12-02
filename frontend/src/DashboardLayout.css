@@ -9,3 +9,8 @@
   flex: 1; /* Fill remaining vertical space */
   overflow: hidden; /* Prevent double scrollbars */
 }
+
+.main-content > :not(.sidebar) {
+  flex: 1;
+  overflow-y: auto;
+}

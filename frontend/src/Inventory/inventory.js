@@ -1,8 +1,10 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { FiFilter, FiBarChart2, FiPlus, FiDownload, FiSearch } from 'react-icons/fi';
 import './Inventory.css';
 
 const Inventory = () => {
+  const navigate = useNavigate();
   return (
     <div className="inventory-page">
       {/* Page Title */}
@@ -46,7 +48,7 @@ const Inventory = () => {
               <p>Start by filling your greenhouse with plants you're growing and tracking.</p>
               
               <div className="action-buttons">
-                <button className="add-btn">
+                <button className="add-btn" onClick={() => navigate('/dashboard/plants/inventory/add-plant')}>
                   <FiPlus /> Add plant
                 </button>
                 <button className="import-btn">
