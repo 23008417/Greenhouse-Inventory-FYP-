@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { FiX, FiUpload, FiSearch, FiBarChart2 } from 'react-icons/fi';
 import './AddGrowingSystem.css';
 
-const AddGrowingSystem = ({ onClose, onSave }) => {
+const AddGrowingSystem = () => {
+  const navigate = useNavigate();
   const [location, setLocation] = useState('');
   const [image, setImage] = useState(null);
   const [systemTypes, setSystemTypes] = useState([]);
@@ -20,8 +22,7 @@ const AddGrowingSystem = ({ onClose, onSave }) => {
   };
 
   const handleAddSystemType = () => {
-    // Logic to add system type
-    console.log('Add system type clicked');
+    navigate('/dashboard/plants/growing-systems/add-system-type');
   };
 
   const handleSave = () => {
@@ -30,16 +31,21 @@ const AddGrowingSystem = ({ onClose, onSave }) => {
       image,
       systemTypes
     };
-    if (onSave) onSave(newSystem);
+    console.log('Saving growing system:', newSystem);
+    navigate('/dashboard/plants/growing-systems');
+  };
+
+  const handleCancel = () => {
+    navigate('/dashboard/plants/growing-systems');
   };
 
   return (
-    <div className="modal-overlay">
-      <div className="add-growing-system-modal">
+    <div className="add-growing-system-page">
+      <div className="add-growing-system-container">
         
         {/* Header */}
         <div className="modal-header">
-          <div className="back-link" onClick={onClose}>
+          <div className="back-link" onClick={handleCancel}>
             ← Cancel and return to growing systems page
           </div>
           <h2>Add growing system</h2>
@@ -129,7 +135,7 @@ const AddGrowingSystem = ({ onClose, onSave }) => {
 
         {/* Footer Buttons */}
         <div className="modal-footer">
-          <button className="cancel-btn" onClick={onClose}>Cancel</button>
+          <button className="cancel-btn" onClick={handleCancel}>Cancel</button>
           <button className="save-btn" onClick={handleSave}>Save</button>
         </div>
 

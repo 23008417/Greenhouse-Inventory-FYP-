@@ -6,6 +6,7 @@ import Dashboard from './Dashboard/Dashboard';
 import Inventory from './Inventory/inventory';
 import AddPlant from './Inventory/AddPlant';
 import GrowingSystems from './GrowingSystems/GrowingSystems';
+import AddGrowingSystem from './GrowingSystems/AddGrowingSystem';
 import AddSystemType from './GrowingSystems/AddSystemType';
 import AddSystemTypeForm from './GrowingSystems/AddSystemTypeForm';
 import Orders from './Orders/Orders';
@@ -22,6 +23,7 @@ const DashboardLayout = () => {
           <Route path="/plants/inventory" element={<Inventory />} />
           <Route path="/plants/inventory/add-plant" element={<AddPlant />} />
           <Route path="/plants/growing-systems" element={<GrowingSystems />} />
+          <Route path="/plants/growing-systems/add-growing-system" element={<AddGrowingSystem />} />
           <Route path="/plants/growing-systems/add-system-type" element={<AddSystemType />} />
           <Route path="/plants/growing-systems/add-system-type/new" element={<AddSystemTypeForm />} />
           <Route path="/orders" element={<Orders />} />

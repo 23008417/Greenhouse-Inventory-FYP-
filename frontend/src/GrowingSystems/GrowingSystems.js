@@ -7,8 +7,8 @@ const GrowingSystems = () => {
   const navigate = useNavigate();
 
   const handleAddSystem = () => {
-    console.log('Navigating to add-system-type...');
-    navigate('/dashboard/plants/growing-systems/add-system-type');
+    console.log('Navigating to add-growing-system...');
+    navigate('/dashboard/plants/growing-systems/add-growing-system');
   };
 
   return (
