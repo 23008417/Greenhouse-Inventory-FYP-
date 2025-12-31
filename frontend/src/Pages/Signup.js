@@ -84,10 +84,10 @@ const Signup = ({ onLogin }) => {
             {loading ? 'Creating account...' : 'Create account'}
           </button>
 
-          <div className="separator">OR</div>
+          {/* <div className="separator">OR</div>
           <button type="button" className="google-button" disabled>
             <FcGoogle /> Sign up with Google (coming soon)
-          </button>
+          </button> */}
         </form>
 
         <p className="auth-footer-link">
