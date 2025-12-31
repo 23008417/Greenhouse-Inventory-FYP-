@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FcGoogle } from 'react-icons/fc';
+// import { FcGoogle } from 'react-icons/fc';
 import './Auth.css';
 
 const API_URL = process.env.REACT_APP_API_URL || '';  // Relative for prod
@@ -84,10 +84,10 @@ const Login = ({ onLogin }) => {
             {loading ? 'Signing in...' : 'Sign in'}
           </button>
 
-          <div className="separator">OR</div>
+          {/* <div className="separator">OR</div>
           <button type="button" className="google-button" disabled>
             <FcGoogle /> Sign in with Google (coming soon)
-          </button>
+          </button> */}
         </form>
 
         <p className="auth-footer-link">

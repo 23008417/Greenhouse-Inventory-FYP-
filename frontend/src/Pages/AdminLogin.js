@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FcGoogle } from 'react-icons/fc';
+// import { FcGoogle } from 'react-icons/fc';
 import { useNavigate } from 'react-router-dom';
 import './Auth.css';
 
@@ -84,10 +84,10 @@ const AdminLogin = ({ onLogin }) => {
             {loading ? 'Signing in...' : 'Sign in'}
           </button>
 
-          <div className="separator">OR</div>
+          {/* <div className="separator">OR</div>
           <button type="button" className="google-button" disabled>
             <FcGoogle /> Sign in with Google (coming soon)
-          </button>
+          </button> */}
         </form>
       </div>
     </div>
