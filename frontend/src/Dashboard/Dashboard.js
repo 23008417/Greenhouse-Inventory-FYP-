@@ -1,234 +1,188 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import './Dashboard.css'; 
 import { 
-  FiFilter, FiChevronDown, FiArrowUp, FiArrowDown,
-  FiCheckCircle, FiTrendingUp, FiTrendingDown, FiAlertCircle, FiChevronRight, FiCalendar,
-  FiInfo, FiClock, FiAlertTriangle
-} from 'react-icons/fi';
-import { 
-  BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend
+    LineChart, Line, BarChart, Bar, 
+    CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer 
 } from 'recharts';
-import './Dashboard.css';
-
-const harvestData = [
-  { name: 'Sep 30', value: 210 }, { name: 'Oct 05', value: 230 }, { name: 'Oct 10', value: 200 },
-  { name: 'Oct 15', value: 250 }, { name: 'Oct 20', value: 220 }, { name: 'Oct 25', value: 280 },
-  { name: 'Oct 30', value: 260 },
-];
-
-const salesData = [
-  { name: 'Sep 30', value: 2000 }, { name: 'Oct 05', value: 2100 }, { name: 'Oct 10', value: 1900 },
-  { name: 'Oct 15', value: 2300 }, { name: 'Oct 20', value: 2200 }, { name: 'Oct 25', value: 2500 },
-  { name: 'Oct 30', value: 2400 },
-];
-
-const cropData = [
-  { name: 'Lettuce', Current: 150, 'Last 30 days': 120 },
-  { name: 'Peppermint', Current: 380, 'Last 30 days': 320 },
-  { name: 'Choysum', Current: 220, 'Last 30 days': 200 },
-  { name: 'Kale', Current: 400, 'Last 30 days': 300 },
-];
+import { FaShoppingCart, FaUser, FaLeaf, FaDollarSign, FaExclamationTriangle } from 'react-icons/fa';
 
 const Dashboard = () => {
-  return (
-    <main className="dashboard-main">
-      <section className="overview-header">
-        <h2>Your overview</h2>
-        <div className="filters">
-          <button><FiFilter /> Filter</button>
-          <button>Date range: Last 30 days <FiChevronDown /></button>
-          <button><FiCalendar /> Compare: Previous period <FiChevronDown /></button>
-        </div>
-      </section>
+    const [data, setData] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
-      <section className="stat-cards">
-        <div className="stat-card">
-          <span className="card-title">Total active plants <FiInfo /></span>
-          <div className="card-value">120</div>
-          <div className="card-change positive"><FiArrowUp /> 5.8%</div>
-        </div>
-        <div className="stat-card">
-          <span className="card-title">Harvest-ready <FiInfo /></span>
-          <div className="card-value">12</div>
-          <div className="card-change neutral">-</div>
-        </div>
-        <div className="stat-card">
-          <span className="card-title">Total harvest <FiInfo /></span>
-          <div className="card-value">200</div>
-          <div className="card-change negative"><FiArrowDown /> 3.1%</div>
-        </div>
-        <div className="stat-card">
-          <span className="card-title">Total sales <FiInfo /></span>
-          <div className="card-value">$2.2k</div>
-          <div className="card-change positive"><FiArrowUp /> 10.8%</div>
-        </div>
-      </section>
+    useEffect(() => {
+        fetch('http://localhost:5000/api/admin/dashboard')
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    setData(data);
+                } else {
+                    setError(data.message || "Backend returned an error");
+                }
+                setLoading(false);
+            })
+            .catch(err => {
+                console.error("Failed to fetch dashboard:", err);
+                setError(err.message || "Network Error - Is the backend running?");
+                setLoading(false);
+            });
+    }, []);
 
-      <section className="mid-row">
-        <div className="chart-card">
-          <div className="chart-header">
-            <h4>Harvest performance <FiInfo /></h4>
-            <span>Previous period</span>
-          </div>
-          <div className="chart-value">
-            <div><span className="chart-label">Harvest volume <FiInfo /></span><strong>200</strong></div>
-            <div><span className="chart-label">Previous</span><strong>206</strong></div>
-          </div>
-          <ResponsiveContainer width="100%" height={200}>
-            <LineChart data={harvestData} margin={{ top: 20, right: 10, left: 0, bottom: 0 }}>
-              <XAxis dataKey="name" fontSize={10} axisLine={false} tickLine={false} />
-              <Tooltip />
-              <Line type="monotone" dataKey="value" stroke="#8884d8" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} />
-            </LineChart>
-          </ResponsiveContainer>
+    if (loading) return <div className="dashboard-main">Loading Dashboard...</div>;
+    
+    if (error) return (
+        <div className="dashboard-main" style={{ color: 'red', padding: '2rem' }}>
+            <h2>⚠️ Error Loading Dashboard</h2>
+            <p><strong>Reason:</strong> {error}</p>
+            <p>Please check your backend terminal for more details.</p>
         </div>
-        <div className="chart-card">
-          <div className="chart-header">
-            <h4>Sales performance <FiInfo /></h4>
-            <span>Previous period</span>
-          </div>
-          <div className="chart-value">
-            <div><span className="chart-label">Sales revenue <FiInfo /></span><strong>$2200.54</strong></div>
-            <div><span className="chart-label">Previous</span><strong>$1986.62</strong></div>
-          </div>
-          <ResponsiveContainer width="100%" height={200}>
-            <LineChart data={salesData} margin={{ top: 20, right: 10, left: 0, bottom: 0 }}>
-              <XAxis dataKey="name" fontSize={10} axisLine={false} tickLine={false} />
-              <Tooltip />
-              <Line type="monotone" dataKey="value" stroke="#82ca9d" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-        <div className="card capacity-card">
-          <div className="card-header">
-            <h4>Capacity utilisation <FiInfo /></h4>
-            <div className="card-actions">
-              <button><FiFilter /> Filter</button>
-              <button>View all</button>
-            </div>
-          </div>
-          <div className="capacity-list">
-            <div className="capacity-header">
-              <span>Location</span>
-              <span>System Type</span>
-              <span>Capacity</span>
-            </div>
-            <div className="capacity-item">
-              <span className="location">Glasshouse</span>
-              <span className="system">Multi-Tier</span>
-              <div className="item-progress">
-                <div className="progress-bar">
-                  <div style={{ width: '100%', backgroundColor: 'var(--red-500)' }}></div>
-                </div>
-                <span className="capacity-full">180/180</span>
-              </div>
-            </div>
-            <div className="capacity-item">
-              <span className="location">Glasshouse</span>
-              <span className="system">MGS</span>
-              <div className="item-progress">
-                <div className="progress-bar">
-                  <div style={{ width: '90%', backgroundColor: 'var(--orange-500)' }}></div>
-                </div>
-                <span className="capacity-partial">72/80</span>
-              </div>
-            </div>
-            <div className="capacity-item">
-              <span className="location">Glasshouse</span>
-              <span className="system">DWC</span>
-              <div className="item-progress">
-                <div className="progress-bar">
-                  <div style={{ width: '11%', backgroundColor: 'var(--green-500)' }}></div>
-                </div>
-                <span className="capacity-partial">10/90</span>
-              </div>
-            </div>
-            <div className="capacity-item">
-              <span className="location">Lab</span>
-              <span className="system">MGS</span>
-              <div className="item-progress">
-                <div className="progress-bar">
-                  <div style={{ width: '0%', backgroundColor: 'var(--green-500)' }}></div>
-                </div>
-                <span className="capacity-partial">0/180</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+    );
 
-      <section className="bottom-row">
-        <div className="card alerts-card">
-          <div className="card-header">
-            <h4>Harvest alerts <span className="alert-badge red">5</span> <FiInfo /></h4>
-            <button>View all</button>
-          </div>
-          <div className="alert-list">
-            <div className="alert-item">
-              <FiCheckCircle className="icon green" />
-              <span>12 crops ready for harvest</span>
-              <FiChevronRight className="arrow" />
-            </div>
-            <div className="alert-item">
-              <FiClock className="icon orange" />
-              <span>30 crops maturing within 7 days</span>
-              <FiChevronRight className="arrow" />
-            </div>
-            <div className="alert-item">
-              <FiTrendingDown className="icon orange" />
-              <span>Lettuce running low on stock (2 left)</span>
-              <FiChevronRight className="arrow" />
-            </div>
-            <div className="alert-item">
-              <FiAlertCircle className="icon red" />
-              <span>System MGS capacity full — harvesting delayed</span>
-              <FiChevronRight className="arrow" />
-            </div>
-          </div>
-        </div>
-        
-        <div className="card alerts-card">
-          <div className="card-header">
-            <h4>Sales alerts <span className="alert-badge red">3</span> <FiInfo /></h4>
-            <button>View all</button>
-          </div>
-          <div className="alert-list">
-            <div className="alert-item">
-              <FiClock className="icon orange" />
-              <span>6 orders pending</span>
-              <FiChevronRight className="arrow" />
-            </div>
-            <div className="alert-item">
-              <FiAlertTriangle className="icon red" />
-              <span>2 orders failed payment</span>
-              <FiChevronRight className="arrow" />
-            </div>
-            <div className="alert-item">
-              <FiTrendingUp className="icon green" />
-              <span>Peppermint sales increased by 15% from last week</span>
-              <FiChevronRight className="arrow" />
-            </div>
-          </div>
-        </div>
+    if (!data) return <div className="dashboard-main">No data found.</div>;
 
-        <div className="card crops-card">
-          <div className="card-header">
-            <h4>Top performing crops <FiInfo /></h4>
-            <button><FiFilter /> Filter</button>
-          </div>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={cropData} margin={{ top: 20, right: 0, left: -20, bottom: 0 }}>
-              <Tooltip cursor={{fill: '#f9fafb'}} />
-              <Legend verticalAlign="top" height={36} iconType="circle" />
-              <XAxis dataKey="name" fontSize={12} axisLine={false} tickLine={false} />
-              <YAxis fontSize={12} axisLine={false} tickLine={false} />
-              <Bar dataKey="Current" fill="#047857" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="Last 30 days" fill="#a7f3d0" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </section>
-    </main>
-  );
+    return (
+        <main className="dashboard-main">
+            <div className="overview-header">
+                <h2>Overview</h2>
+            </div>
+
+            {/* --- TOP ROW: STAT CARDS --- */}
+            <div className="stat-cards">
+                <div className="stat-card">
+                    <div className="card-title">Total Revenue <FaDollarSign /></div>
+                    <div className="card-value">${data.stats.revenue}</div>
+                    <div className="card-change positive">Since start</div>
+                </div>
+                <div className="stat-card">
+                    <div className="card-title">Total Orders <FaShoppingCart /></div>
+                    <div className="card-value">{data.stats.orders}</div>
+                </div>
+                <div className="stat-card">
+                    <div className="card-title">Customers <FaUser /></div>
+                    <div className="card-value">{data.stats.customers}</div>
+                </div>
+                <div className="stat-card">
+                    <div className="card-title">Total Plants <FaLeaf /></div>
+                    <div className="card-value">{data.stats.products}</div>
+                </div>
+            </div>
+
+            {/* --- MIDDLE ROW: BAR CHART + ALERTS --- */}
+            <div className="mid-row" style={{ gridTemplateColumns: "2fr 1fr", gap: "1.5rem", marginBottom: "1.5rem" }}>
+                
+                {/* 1. BAR CHART: Top Selling Products (RESTORED) */}
+                <div className="chart-card">
+                    <div className="chart-header">
+                        <h4>Top Selling Products</h4>
+                    </div>
+                    <div style={{ width: '100%', height: 300 }}>
+                        <ResponsiveContainer>
+                            <BarChart data={data.chartData}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                                <XAxis dataKey="name" stroke="#6b7280" fontSize={12} tick={{dy: 10}} />
+                                <YAxis stroke="#6b7280" fontSize={12}/>
+                                <Tooltip cursor={{fill: '#f3f4f6'}} contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}} />
+                                <Bar dataKey="sales" fill="#10b981" radius={[4, 4, 0, 0]} name="Units Sold" />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+
+                {/* 2. ALERTS: Low Stock */}
+                <div className="card capacity-card">
+                    <div className="card-header">
+                        <h4><FaExclamationTriangle style={{color: '#ef4444'}}/> Low Stock</h4>
+                    </div>
+                    <div className="alert-list">
+                        {data.alerts.length === 0 ? <p style={{padding: '1rem', color: '#6b7280'}}>Inventory levels are good!</p> : null}
+                        {data.alerts.map((item, index) => (
+                            <div key={index} className="alert-item">
+                                <div className="icon red">●</div>
+                                <div>
+                                    <div style={{fontWeight: 600}}>{item.name}</div>
+                                    <div style={{fontSize: '0.85rem', color: '#6b7280'}}>Only {item.quantity} left</div>
+                                </div>
+                                <span className="alert-badge">Low</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+
+            {/* --- BOTTOM ROW: LINE CHART + RECENT ORDERS --- */}
+            <div className="bottom-row" style={{ display: 'grid', gridTemplateColumns: "2fr 1fr", gap: "1.5rem" }}>
+                
+                {/* 3. LINE CHART: Revenue History (NEW POSITION) */}
+                <div className="chart-card">
+                    <div className="chart-header">
+                        <h4>Revenue History (Last 7 Days)</h4>
+                    </div>
+                    <div style={{ width: '100%', height: 300 }}>
+                        <ResponsiveContainer>
+                            {data.revenueTrend && data.revenueTrend.length > 0 ? (
+                                <LineChart data={data.revenueTrend}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                                    <XAxis 
+                                        dataKey="date" 
+                                        stroke="#6b7280" 
+                                        fontSize={12} 
+                                        tickFormatter={(str) => {
+                                            const date = new Date(str);
+                                            return `${date.getMonth() + 1}/${date.getDate()}`;
+                                        }}
+                                        tick={{dy: 10}}
+                                    />
+                                    <YAxis stroke="#6b7280" fontSize={12} prefix="$"/>
+                                    <Tooltip 
+                                        contentStyle={{backgroundColor: '#fff', borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}}
+                                        formatter={(value) => [`$${value}`, "Revenue"]}
+                                    />
+                                    <Line 
+                                        type="monotone" 
+                                        dataKey="daily_revenue" 
+                                        stroke="#3b82f6" 
+                                        strokeWidth={3}
+                                        dot={{ fill: '#3b82f6', r: 4, strokeWidth: 2, stroke: '#fff' }}
+                                        activeDot={{ r: 6 }} 
+                                        name="Daily Revenue"
+                                    />
+                                </LineChart>
+                            ) : (
+                                <div style={{display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#6b7280', flexDirection: 'column'}}>
+                                    <p>No sales data found for the last 7 days.</p>
+                                    <small>(Try adding test orders with past dates)</small>
+                                </div>
+                            )}
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+
+                {/* 4. RECENT ORDERS LIST */}
+                <div className="card">
+                    <div className="card-header">
+                        <h4>Recent Orders</h4>
+                    </div>
+                    <div className="capacity-list">
+                        {data.recentOrders.length === 0 ? <p style={{padding: '1rem', color: '#6b7280'}}>No orders yet.</p> : null}
+                        {data.recentOrders.map((order) => (
+                            <div key={order.order_id} className="capacity-item" style={{gridTemplateColumns: "1fr 1fr", padding: '0.75rem 0'}}>
+                                <div>
+                                    <div className="location" style={{fontWeight: 'bold'}}>Order #{order.order_id}</div>
+                                    <div style={{fontSize: '0.8rem', color: '#9ca3af'}}>{new Date(order.order_date).toLocaleDateString()}</div>
+                                </div>
+                                <div className="system" style={{textAlign: 'right'}}>
+                                    <div style={{color: '#10b981', fontWeight: '600'}}>${order.total_amount}</div>
+                                    <span style={{fontSize: '0.75rem', background: '#e5e7eb', padding: '2px 6px', borderRadius: '4px'}}>{order.status}</span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    );
 };
 
 export default Dashboard;
