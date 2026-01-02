@@ -1,114 +1,29 @@
-// server.js — FINAL VERSION (Auth + Admin Dashboard)
+// server.js — FINAL VERSION FOR first_name + last_name columns
 require('dotenv').config();
 const express = require('express');
 const mysql = require('mysql2/promise');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
-const path = require('path');
+const path = require('path');  // Added for static serving
 
 const app = express();
-app.use(cors({ origin: true, credentials: true })); 
+app.use(cors({ origin: true, credentials: true }));  // In prod, tighten to your domain if needed
 app.use(express.json());
 
-// --- DATABASE CONNECTION ---
-// FIX: Using direct string to avoid localhost default issues
-const pool = mysql.createPool(process.env.DATABASE_URL);
+// Database connection
+const pool = mysql.createPool({
+  uri: process.env.DATABASE_URL,
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+});
 
-// JWT Secret
-const JWT_SECRET = process.env.JWT_SECRET || 'secret-key';
+const JWT_SECRET = process.env.JWT_SECRET;
 
 const generateToken = (userId) => {
   return jwt.sign({ userId }, JWT_SECRET, { expiresIn: '7d' });
 };
 
-// ==========================================
-//  1. ADMIN DASHBOARD API (Stats & Charts)
-//  (Placed at top to ensure it loads first)
-// ==========================================
-app.get('/api/admin/dashboard', async (req, res) => {
-    try {
-        console.log("📊 Fetching dashboard data...");
-
-        // A. STAT CARDS
-        const [orderStats] = await pool.query(`
-            SELECT COUNT(*) as total_orders, COALESCE(SUM(total_amount), 0) as total_revenue 
-            FROM orders
-        `);
-        
-        const [productStats] = await pool.query(`SELECT COUNT(*) as total_products FROM plant_inventory`);
-        const [customerStats] = await pool.query(`SELECT COUNT(*) as total_customers FROM users WHERE role = 'Buyer'`);
-
-        // B. CHART DATA: Top 5 Best Selling Plants
-        const [topProducts] = await pool.query(`
-            SELECT p.name, COALESCE(SUM(oi.quantity_purchased), 0) as sales
-            FROM plant_inventory p
-            LEFT JOIN order_items oi ON p.plant_id = oi.plant_id
-            GROUP BY p.plant_id, p.name
-            ORDER BY sales DESC
-            LIMIT 5
-        `);
-
-        // C. ALERTS: Low Stock Inventory
-        const [lowStock] = await pool.query(`
-            SELECT name, quantity 
-            FROM plant_inventory 
-            WHERE quantity < 20 
-            ORDER BY quantity ASC 
-            LIMIT 5
-        `);
-
-        // D. RECENT ACTIVITY: Latest 5 Orders
-        const [recentOrders] = await pool.query(`
-            SELECT o.order_id, u.first_name, o.total_amount, o.status, o.order_date
-            FROM orders o
-            JOIN users u ON o.buyer_id = u.id
-            ORDER BY o.order_date DESC
-            LIMIT 5
-        `);
-
-        // E. LINE CHART: Revenue History (Last 7 Days)
-        const [revenueRaw] = await pool.query(`
-            SELECT 
-                DATE_FORMAT(order_date, '%Y-%m-%d') as date, 
-                SUM(total_amount) as daily_revenue
-            FROM orders
-            WHERE order_date >= DATE_SUB(NOW(), INTERVAL 7 DAY) 
-            GROUP BY date
-            ORDER BY date ASC
-        `);
-
-        const revenueTrend = revenueRaw.map(row => ({
-            date: row.date,
-            daily_revenue: parseFloat(row.daily_revenue)
-        }));
-
-        res.json({
-            success: true,
-            stats: {
-                revenue: orderStats[0].total_revenue,
-                orders: orderStats[0].total_orders,
-                products: productStats[0].total_products,
-                customers: customerStats[0].total_customers
-            },
-            chartData: topProducts,
-            alerts: lowStock,
-            recentOrders: recentOrders,
-            revenueTrend: revenueTrend
-        });
-
-    } catch (err) {
-        console.error("Dashboard Error:", err);
-        res.status(500).json({ success: false, message: "Server Error" });
-    }
-});
-
-
-// ==========================================
-//  2. AUTH ROUTES (Login / Signup)
-// ==========================================
-
-// SIGNUP
+// SIGNUP — POST /api/auth/signup
 app.post('/api/auth/signup', async (req, res) => {
   const { email, password, firstName, lastName } = req.body;
 
@@ -117,6 +32,7 @@ app.post('/api/auth/signup', async (req, res) => {
   }
 
   try {
+    // Check if email already exists
     const [existing] = await pool.query('SELECT id FROM users WHERE email = ?', [email.toLowerCase()]);
     if (existing.length > 0) {
       return res.status(400).json({ error: 'Email already registered' });
@@ -124,10 +40,16 @@ app.post('/api/auth/signup', async (req, res) => {
 
     const hashed = await bcrypt.hash(password, 12);
 
+    // Insert with your exact columns: first_name + last_name
     const [result] = await pool.query(
       `INSERT INTO users (email, password_hash, first_name, last_name, role) 
        VALUES (?, ?, ?, ?, 'Buyer')`,
-      [email.toLowerCase(), hashed, (firstName || '').trim(), (lastName || '').trim()]
+      [
+        email.toLowerCase(),
+        hashed,
+        (firstName || '').trim() || null,
+        (lastName || '').trim() || null
+      ]
     );
 
     const token = generateToken(result.insertId);
@@ -227,16 +149,13 @@ app.get('/', (req, res) => {
   res.json({ message: 'Cropflow Backend — Ready!' });
 });
 
-
-// ==========================================
-//  3. STATIC FILES (For Production)
-// ==========================================
+// Serve static files from the React app in production
 if (process.env.NODE_ENV === 'production') {
   const buildPath = path.join(__dirname, 'build');
   app.use(express.static(buildPath));
 
-  // Catch-all must be LAST
-  app.get('/*', (req, res) => {
+  // Handle SPA: Serve index.html for all non-API requests
+  app.get('/*catchAll', (req, res) => {  // ← Updated syntax
     if (req.path.startsWith('/api')) {
       return res.status(404).json({ error: 'Not found' });
     }
@@ -245,6 +164,4 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT} --- WITH DASHBOARD 🚀`);
-});
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
