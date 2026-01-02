@@ -9,7 +9,7 @@
     "test": "react-scripts test",
     "server": "nodemon server.js"
   },
-  "proxy": "http://localhost:3001",
+  "proxy": "http://localhost:5000",
   "engines": { "node": "18.x" },
   "dependencies": {
     "bcryptjs": "^2.4.3",
