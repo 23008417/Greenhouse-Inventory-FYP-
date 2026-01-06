@@ -32,6 +32,11 @@ app.use(cors({
 
 app.use(express.json());
 
+// Simple health/root endpoint
+app.get('/', (_req, res) => {
+  res.send('Cropflow API is running');
+});
+
 /* =====================
    UPLOADS
 ===================== */
