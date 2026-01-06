@@ -9,10 +9,8 @@
     "test": "react-scripts test",
     "server": "nodemon server.js"
   },
-  "proxy": "http://localhost:3001",
-  "engines": {
-    "node": "18.x"
-  },
+  "proxy": "http://localhost:5000",
+  "engines": { "node": "18.x" },
   "dependencies": {
     "@paypal/react-paypal-js": "^8.9.2",
     "bcryptjs": "^2.4.3",
