@@ -66,7 +66,8 @@ const ExpandableNavItem = ({ icon, children, subItems }) => {
 const Sidebar = () => {
   const plantsSubItems = [
     { label: 'Inventory', to: '/dashboard/plants/inventory' },
-    { label: 'Growing systems', to: '/dashboard/plants/growing-systems' }
+    // { label: 'Growing systems', to: '/dashboard/plants/growing-systems' },
+    { label: 'Add Plant', to: '/dashboard/plants/inventory/addplant' },
   ];
 
   return (
@@ -92,8 +93,11 @@ const Sidebar = () => {
           Reports
         </NavItem>
 
-        <NavItem to="/dashboard/store" icon={<FiShoppingBag />}>
-          Store
+        <NavItem to="/dashboard/event" icon={<FiShoppingBag />}>
+          Event
+        </NavItem>
+         <NavItem to="/dashboard/cropmgmt" icon={<FiPackage />}>
+          Crop Management
         </NavItem>
       </ul>
     </nav>

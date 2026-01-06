@@ -1,82 +1,71 @@
 .add-plant-page {
   padding: 2rem 3rem;
-  height: 100%;
-  overflow-y: auto;
+  min-height: 0vh;
   width: 100%;
   background-color: #f9fafb;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.add-plant-page h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 2rem;
+  text-align: left;
 }
 
 .add-plant-header {
-  margin-bottom: 2rem;
-  max-width: 1200px;
-}
-
-.back-link {
-  background: none;
-  border: none;
-  color: #6b7280;
-  font-size: 0.875rem;
-  cursor: pointer;
-  padding: 0;
-  margin-bottom: 0.75rem;
-  display: inline-block;
-  transition: color 0.2s;
-}
-
-.back-link:hover {
-  color: #374151;
-}
-
-.add-plant-header h1 {
-  font-size: 1.875rem;
-  font-weight: 600;
-  color: #111827;
-  margin: 0;
+  display: flex;
+  flex-direction: row;
 }
 
 .add-plant-form {
+  width: 100%;
+  max-width: 700px;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+/* Form Sections */
+.form-section {
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  padding: 2rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  max-width: 1200px;
 }
 
-.form-section {
-  background: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  padding: 2rem;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-}
-
-.section-title {
-  font-size: 1rem;
+.form-section h2 {
+  font-size: 1.25rem;
   font-weight: 600;
   color: #111827;
-  margin: 0 0 1.5rem 0;
-  text-align: center;
+  margin-bottom: 1rem;
 }
 
+/* Form Groups */
 .form-group {
-  margin-bottom: 1.5rem;
-}
-
-.form-group:last-child {
-  margin-bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
 .form-group label {
-  display: block;
   font-size: 0.875rem;
   font-weight: 500;
   color: #374151;
-  margin-bottom: 0.5rem;
 }
 
 .form-group input[type="text"],
 .form-group input[type="number"],
 .form-group input[type="date"],
-.form-group select {
+.form-group select,
+.form-group input[type="file"] {
   width: 100%;
   padding: 0.625rem 0.75rem;
   border: 1px solid #d1d5db;
@@ -93,34 +82,30 @@
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
-.form-group input::placeholder,
-.form-group select option[value=""] {
+.form-group input::placeholder {
   color: #9ca3af;
 }
 
-.form-group input[readonly] {
-  background-color: #f9fafb;
-  color: #6b7280;
-  cursor: not-allowed;
+/* Flex fields side by side (e.g., Quantity & Price) */
+.flex-row {
+  display: flex;
+  gap: 1rem;
 }
 
-.field-hint {
-  display: block;
-  font-size: 0.8rem;
-  color: #6b7280;
-  margin-top: 0.25rem;
+.flex-row .form-group {
+  flex: 1;
 }
 
-/* Image Upload Area */
+/* Image upload */
 .image-upload-area {
   border: 2px dashed #d1d5db;
   border-radius: 8px;
-  padding: 2rem;
+  padding: 1.5rem;
   text-align: center;
   background-color: #fafafa;
   transition: border-color 0.2s, background-color 0.2s;
-  min-height: 150px;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
 }
@@ -136,17 +121,11 @@
   flex-direction: column;
   align-items: center;
   gap: 0.5rem;
-  width: 100%;
 }
 
 .upload-icon {
   font-size: 2rem;
   color: #6b7280;
-}
-
-.upload-label span {
-  color: #6b7280;
-  font-size: 0.9rem;
 }
 
 .image-preview {
@@ -173,7 +152,6 @@
   border-radius: 4px;
   cursor: pointer;
   font-size: 0.85rem;
-  transition: background 0.2s;
 }
 
 .remove-image:hover {
@@ -184,9 +162,7 @@
 .form-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 0.75rem;
-  margin-top: 1rem;
-  max-width: 1200px;
+  gap: 1rem;
 }
 
 .cancel-btn,
@@ -218,26 +194,37 @@
   background: #059669;
 }
 
-/* Responsive Design */
+.save-btn:disabled {
+  background: #d1d5db;
+  cursor: not-allowed;
+}
+
+/* Error Message */
+.error-message {
+  color: #ef4444;
+  font-size: 0.875rem;
+}
+
+/* Responsive */
 @media (max-width: 768px) {
   .add-plant-page {
     padding: 1rem 1.5rem;
   }
 
-  .form-section {
-    padding: 1.5rem;
+  .add-plant-form {
+    max-width: 100%;
   }
 
-  .add-plant-header h1 {
-    font-size: 1.5rem;
+  .flex-row {
+    flex-direction: column;
   }
 
   .form-actions {
-    flex-direction: row;
+    flex-direction: column;
   }
 
   .cancel-btn,
   .save-btn {
-    flex: 1;
+    width: 100%;
   }
 }
