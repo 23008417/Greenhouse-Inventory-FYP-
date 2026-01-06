@@ -3,7 +3,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Auth.css';
 
-const API_URL = process.env.REACT_APP_API_URL || '';  // Relative for prod
+// Backend base URL: set REACT_APP_API_URL in production, fallback to localhost in dev
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
 const AdminLogin = ({ onLogin }) => {
   const navigate = useNavigate();

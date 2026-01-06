@@ -1,107 +1,119 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiUpload } from 'react-icons/fi';
+import { FiArrowLeft, FiUpload } from 'react-icons/fi';
 import './AddPlant.css';
+
+const API_URL = 'http://localhost:5000'; // replace with your API base URL
 
 const AddPlant = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: '',
-    cropType: '',
-    quantity: '',
-    seedingDate: '',
-    growthDuration: '',
-    spongeDate: '',
-    harvestDate: ''
+    crop_category: '',
+    growth_duration_weeks: '',
+    seeding_date: '',
+    harvest_date: '',
+    quantity: ''
   });
   const [imageFile, setImageFile] = useState(null);
-  const [imagePreview, setImagePreview] = useState(null);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
+  // Handle input changes
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
 
-    // Auto-calculate harvest date when seeding date and growth duration are provided
-    if (name === 'seedingDate' || name === 'growthDuration') {
-      const seedDate = name === 'seedingDate' ? value : formData.seedingDate;
-      const duration = name === 'growthDuration' ? value : formData.growthDuration;
-      
+    setFormData(prev => ({ ...prev, [name]: value }));
+
+    // Auto-calculate harvest date
+    if (name === 'seeding_date' || name === 'growth_duration_weeks') {
+      const seedDate = name === 'seeding_date' ? value : formData.seeding_date;
+      const duration = name === 'growth_duration_weeks' ? value : formData.growth_duration_weeks;
+
       if (seedDate && duration) {
         const weeks = parseInt(duration.replace(/\D/g, ''));
         if (!isNaN(weeks)) {
-          const harvestDate = new Date(seedDate);
-          harvestDate.setDate(harvestDate.getDate() + (weeks * 7));
+          const [year, month, day] = seedDate.split('-').map(Number);
+          const harvestDate = new Date(year, month - 1, day);
+          harvestDate.setDate(harvestDate.getDate() + weeks * 7);
           setFormData(prev => ({
             ...prev,
-            harvestDate: harvestDate.toISOString().split('T')[0]
+            harvest_date: harvestDate.toISOString().slice(0, 10)
           }));
         }
       }
     }
   };
 
+  // Handle image selection
   const handleImageChange = (e) => {
     const file = e.target.files[0];
-    if (file) {
-      setImageFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result);
-      };
-      reader.readAsDataURL(file);
+    if (file) setImageFile(file);
+  };
+
+  const removeImage = () => setImageFile(null);
+
+  // Submit form
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setError('Please login');
+      setLoading(false);
+      return;
     }
-  };
 
-  const handleDragOver = (e) => {
-    e.preventDefault();
-  };
+    const submitData = new FormData();
+    submitData.append('name', formData.name);
+    submitData.append('crop_category', formData.crop_category);
+    submitData.append(
+      'growth_duration_weeks',
+      parseInt(formData.growth_duration_weeks.replace(/\D/g, '')) || 0
+    );
+    submitData.append('seeding_date', formData.seeding_date);
+    submitData.append('harvest_date', formData.harvest_date || '');
+    submitData.append('quantity', formData.quantity);
+    submitData.append('price', 0);
 
-  const handleDrop = (e) => {
-    e.preventDefault();
-    const file = e.dataTransfer.files[0];
-    if (file && file.type.startsWith('image/')) {
-      setImageFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result);
-      };
-      reader.readAsDataURL(file);
+    if (imageFile) submitData.append('image', imageFile);
+
+    try {
+      const res = await fetch(`${API_URL}/api/plants/add`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: submitData
+      });
+
+      const data = await res.json();
+      if (res.ok) navigate(-1);
+      else setError(data.error);
+    } catch {
+      setError('Network error');
+    } finally {
+      setLoading(false);
     }
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    // TODO: Add API call to save plant data
-    console.log('Plant data:', formData);
-    console.log('Image file:', imageFile);
-    
-    // For now, just navigate back to inventory
-    navigate('/inventory');
-  };
-
-  const handleCancel = () => {
-    navigate('/inventory');
   };
 
   return (
     <div className="add-plant-page">
       <div className="add-plant-header">
-        <button className="back-link" onClick={handleCancel}>
-          &lt; Cancel and return to Inventory page
-        </button>
-        <h1>Add new plant</h1>
+        {/* <button className="back-link" onClick={() => navigate(-1)}>
+          <FiArrowLeft /> Back
+        </button> */}
+        <h1>Add New Plant</h1>
       </div>
 
-      <form onSubmit={handleSubmit} className="add-plant-form">
-        {/* Plant Information Section */}
+      {error && <div className="error-message">{error}</div>}
+
+      <form className="add-plant-form" onSubmit={handleSubmit}>
         <div className="form-section">
-          <h2 className="section-title">Plant information</h2>
-          
+          <h2 className="section-title">Plant Details</h2>
+
           <div className="form-group">
-            <label htmlFor="name">Name</label>
+            <label htmlFor="name">Plant Name</label>
             <input
               type="text"
               id="name"
@@ -114,21 +126,59 @@ const AddPlant = () => {
           </div>
 
           <div className="form-group">
-            <label htmlFor="cropType">Crop type</label>
+            <label htmlFor="crop_category">Crop Category</label>
             <select
-              id="cropType"
-              name="cropType"
-              value={formData.cropType}
+              id="crop_category"
+              name="crop_category"
+              value={formData.crop_category}
               onChange={handleInputChange}
               required
             >
-              <option value="">Select a crop type</option>
+              <option value="">Select a crop category</option>
               <option value="Leafy Greens">Leafy Greens</option>
               <option value="Herbs">Herbs</option>
               <option value="Fruits">Fruits</option>
               <option value="Vegetables">Vegetables</option>
               <option value="Root Crops">Root Crops</option>
+              <option value="Flowers">Flowers</option>
             </select>
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="seeding_date">Seeding Date</label>
+            <input
+              type="date"
+              id="seeding_date"
+              name="seeding_date"
+              value={formData.seeding_date}
+              onChange={handleInputChange}
+              required
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="growth_duration_weeks">Growth Duration (weeks)</label>
+            <input
+              type="number"
+              id="growth_duration_weeks"
+              name="growth_duration_weeks"
+              placeholder="e.g. 4"
+              value={formData.growth_duration_weeks}
+              onChange={handleInputChange}
+              required
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="harvest_date">Harvest Date</label>
+            <input
+              type="date"
+              id="harvest_date"
+              name="harvest_date"
+              value={formData.harvest_date}
+              readOnly
+            />
+            <span className="field-hint">Calculated automatically from seeding date + growth duration</span>
           </div>
 
           <div className="form-group">
@@ -137,114 +187,36 @@ const AddPlant = () => {
               type="number"
               id="quantity"
               name="quantity"
-              placeholder="Enter number of plants"
+              placeholder="Enter quantity"
               value={formData.quantity}
               onChange={handleInputChange}
-              min="1"
               required
             />
           </div>
 
           <div className="form-group">
-            <label htmlFor="image">Image</label>
-            <div 
-              className="image-upload-area"
-              onDragOver={handleDragOver}
-              onDrop={handleDrop}
-            >
-              {imagePreview ? (
+            <label>Plant Image</label>
+            <div className="image-upload-area">
+              {imageFile ? (
                 <div className="image-preview">
-                  <img src={imagePreview} alt="Plant preview" />
-                  <button 
-                    type="button" 
-                    className="remove-image"
-                    onClick={() => {
-                      setImageFile(null);
-                      setImagePreview(null);
-                    }}
-                  >
-                    Remove
-                  </button>
+                  <img src={URL.createObjectURL(imageFile)} alt="Preview" />
+                  <button type="button" className="remove-image" onClick={removeImage}>Remove</button>
                 </div>
               ) : (
-                <label htmlFor="imageInput" className="upload-label">
+                <label className="upload-label">
                   <FiUpload className="upload-icon" />
-                  <span>Add images or drag and drop to upload</span>
-                  <input
-                    type="file"
-                    id="imageInput"
-                    accept="image/*"
-                    onChange={handleImageChange}
-                    style={{ display: 'none' }}
-                  />
+                  <span>Click or drag image here to upload</span>
+                  <input type="file" accept="image/*" onChange={handleImageChange} hidden />
                 </label>
               )}
             </div>
           </div>
         </div>
 
-        {/* Growth Timeline Section */}
-        <div className="form-section">
-          <h2 className="section-title">Growth timeline</h2>
-          
-          <div className="form-group">
-            <label htmlFor="seedingDate">Seeding date</label>
-            <input
-              type="date"
-              id="seedingDate"
-              name="seedingDate"
-              value={formData.seedingDate}
-              onChange={handleInputChange}
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="growthDuration">Growth duration</label>
-            <input
-              type="text"
-              id="growthDuration"
-              name="growthDuration"
-              placeholder="e.g. 5 weeks"
-              value={formData.growthDuration}
-              onChange={handleInputChange}
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="spongeDate">Sponge date</label>
-            <input
-              type="date"
-              id="spongeDate"
-              name="spongeDate"
-              value={formData.spongeDate}
-              onChange={handleInputChange}
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="harvestDate">Harvest date</label>
-            <input
-              type="date"
-              id="harvestDate"
-              name="harvestDate"
-              value={formData.harvestDate}
-              onChange={handleInputChange}
-              placeholder="Auto calculated based on seeding date and growth duration"
-              readOnly
-            />
-            <small className="field-hint">Auto calculated based on seeding date and growth duration</small>
-          </div>
-        </div>
-
-        {/* Action Buttons */}
         <div className="form-actions">
-          <button type="button" className="cancel-btn" onClick={handleCancel}>
-            Cancel
-          </button>
-          <button type="submit" className="save-btn">
-            Save
+          <button type="button" className="cancel-btn" onClick={() => navigate(-1)}>Cancel</button>
+          <button type="submit" className="save-btn" disabled={loading}>
+            {loading ? 'Saving...' : 'Save Plant'}
           </button>
         </div>
       </form>

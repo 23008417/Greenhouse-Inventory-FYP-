@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import GlobalHeader from './GlobalHeader';
 import Sidebar from './Sidebar/Sidebar';
 import Dashboard from './Dashboard/Dashboard';
@@ -16,20 +16,41 @@ const DashboardLayout = () => {
   return (
     <div className="app-layout">
       <GlobalHeader />
+
       <div className="main-content">
         <Sidebar />
+
         <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/plants/inventory" element={<Inventory />} />
-          <Route path="/plants/inventory/add-plant" element={<AddPlant />} />
-          <Route path="/plants/growing-systems" element={<GrowingSystems />} />
-          <Route path="/plants/growing-systems/add-growing-system" element={<AddGrowingSystem />} />
-          <Route path="/plants/growing-systems/add-system-type" element={<AddSystemType />} />
-          <Route path="/plants/growing-systems/add-system-type/new" element={<AddSystemTypeForm />} />
-          <Route path="/orders" element={<Orders />} />
+          {/* Default dashboard page */}
+          <Route index element={<Dashboard />} />
+
+          {/* Inventory */}
+          <Route path="plants/inventory" element={<Inventory />} />
+          <Route path="plants/inventory/addplant" element={<AddPlant />} />
+
+          {/* Growing systems */}
+          <Route path="plants/growing-systems" element={<GrowingSystems />} />
+          <Route
+            path="plants/growing-systems/add-growing-system"
+            element={<AddGrowingSystem />}
+          />
+          <Route
+            path="plants/growing-systems/add-system-type"
+            element={<AddSystemType />}
+          />
+          <Route
+            path="plants/growing-systems/add-system-type/new"
+            element={<AddSystemTypeForm />}
+          />
+          
+          <Route path="orders" element={<Orders />} />
           <Route path="/customers" element={<div style={{padding: '2rem'}}>Customers - Coming Soon</div>} />
           <Route path="/reports" element={<div style={{padding: '2rem'}}>Reports - Coming Soon</div>} />
-          <Route path="/store" element={<div style={{padding: '2rem'}}>Store - Coming Soon</div>} />
+          <Route path="/event" element={<div style={{padding: '2rem'}}> Event - Coming Soon</div>} />
+          <Route path="/cropmgmt" element={<div style={{padding: '2rem'}}> Crop Management - Coming Soon</div>} />
+
+          {/* Fallback */}
+          <Route path="*" element={<Navigate to="." />} />
         </Routes>
       </div>
     </div>
