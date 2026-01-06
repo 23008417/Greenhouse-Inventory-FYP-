@@ -395,7 +395,8 @@ app.use('/uploads', express.static('uploads'));
 if (process.env.NODE_ENV === 'production') {
   const buildPath = path.join(__dirname, 'build');
   app.use(express.static(buildPath));
-  app.get('*', (req, res) => res.sendFile(path.join(buildPath, 'index.html')));
+  // Use a RegExp here to avoid path-to-regexp errors with the "*" pattern
+  app.get(/.*/, (req, res) => res.sendFile(path.join(buildPath, 'index.html')));
 }
 
 const PORT = process.env.PORT || 5000;
