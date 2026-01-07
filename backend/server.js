@@ -70,6 +70,7 @@ const pool = mysql.createPool({
 
 /* =====================
    PAYPAL CLIENT
+   - Controlled via PAYPAL_MODE env: 'sandbox' (default) or 'live'
 ===================== */
 const createPayPalClient = () => {
   const clientId = process.env.PAYPAL_CLIENT_ID;
@@ -77,7 +78,8 @@ const createPayPalClient = () => {
 
   if (!clientId || !clientSecret) return null;
 
-  const Environment = process.env.NODE_ENV === 'production'
+  const mode = (process.env.PAYPAL_MODE || 'sandbox').toLowerCase();
+  const Environment = mode === 'live'
     ? paypal.core.LiveEnvironment
     : paypal.core.SandboxEnvironment;
 
