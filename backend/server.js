@@ -87,9 +87,6 @@ const createPayPalClient = () => {
   return new paypal.core.PayPalHttpClient(env);
 };
 
-/* =====================
-   AUTH HELPERS
-===================== */
 const generateToken = (userId) =>
   jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: '7d' });
 

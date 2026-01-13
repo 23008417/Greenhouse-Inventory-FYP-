@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { FiArrowLeft, FiUpload } from 'react-icons/fi';
 import './AddPlant.css';
 
-const API_URL = 'http://localhost:5000'; // replace with your API base URL
+// Use the same configurable API base URL as the rest of the app
+const API_URL = process.env.REACT_APP_API_URL || '';
 
 const AddPlant = () => {
   const navigate = useNavigate();
