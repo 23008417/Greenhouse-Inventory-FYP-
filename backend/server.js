@@ -366,31 +366,68 @@ app.post('/api/paypal/capture', authenticate, async (req, res) => {
     return res.status(400).json({ error: 'Invalid payload' });
   }
 
+  // We get a specific connection so we can use a "Transaction"
+  // (This ensures we don't save the order if the inventory update fails)
+  const connection = await pool.getConnection();
+
   try {
-    // On the client we already call actions.order.capture().
-    // Here we just GET the order to verify it and then
-    // treat it as confirmed on our side.
+    // 1. Verify with PayPal first
     const request = new paypal.orders.OrdersGetRequest(orderID);
     const response = await client.execute(request);
-
     const status = response.result.status;
+
     if (status !== 'COMPLETED') {
+      connection.release();
       return res.status(400).json({ error: `Unexpected PayPal status: ${status}` });
     }
 
-    // TODO: persist order + decrement inventory using `items` and `total`.
+    // 2. Start Database Transaction
+    await connection.beginTransaction();
+
+    // 3. Insert into 'orders' table
+    const [orderResult] = await connection.query(
+      `INSERT INTO orders (buyer_id, total_amount, status, order_date) VALUES (?, ?, 'Completed', NOW())`,
+      [req.user.id, Number(total)]
+    );
+    const newOrderId = orderResult.insertId;
+
+    // 4. Insert items and update inventory
+    for (const item of items) {
+      // Save item to order_items
+      await connection.query(
+        `INSERT INTO order_items (order_id, plant_id, quantity_purchased, unit_price_at_sale)
+         VALUES (?, ?, ?, ?)`,
+        [newOrderId, item.plant_id, item.quantity_purchased || 1, item.unit_price_at_sale]
+      );
+
+      // Subtract stock from plant_inventory
+      await connection.query(
+        `UPDATE plant_inventory SET quantity = GREATEST(quantity - ?, 0) WHERE plant_id = ?`,
+        [item.quantity_purchased || 1, item.plant_id]
+      );
+    }
+
+    // 5. Commit (Save) the transaction
+    await connection.commit();
+    connection.release();
+
+    console.log(`✅ Order #${newOrderId} saved to database!`);
 
     res.json({
       success: true,
       orderId: orderID,
+      dbOrderId: newOrderId,
       paypalStatus: status,
     });
+
   } catch (err) {
-    console.error('PayPal verification failed', err);
-    res.status(500).json({ error: 'Failed to verify PayPal order' });
+    // If anything fails, undo changes
+    await connection.rollback();
+    connection.release();
+    console.error('PayPal verification/DB save failed', err);
+    res.status(500).json({ error: 'Failed to process order' });
   }
 });
-
 /* =====================
    STATIC FILES
 ===================== */
