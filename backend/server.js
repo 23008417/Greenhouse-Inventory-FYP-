@@ -399,5 +399,54 @@ app.post('/api/paypal/capture', authenticate, async (req, res) => {
 ===================== */
 app.use('/uploads', express.static('uploads'));
 
+/* =========================================
+   ADMIN DASHBOARD API (Your Custom Route)
+   ========================================= */
+app.get('/api/admin/dashboard', async (req, res) => {
+    try {
+        console.log("📊 Fetching dashboard data...");
+        
+        // 1. Get Stats
+        const [orderStats] = await pool.query(`SELECT COUNT(*) as total_orders, COALESCE(SUM(total_amount), 0) as total_revenue FROM orders`);
+        const [productStats] = await pool.query(`SELECT COUNT(*) as total_products FROM plant_inventory`);
+        const [customerStats] = await pool.query(`SELECT COUNT(*) as total_customers FROM users WHERE role = 'Buyer'`);
+        
+        // 2. Get Top Products
+        const [topProducts] = await pool.query(`
+            SELECT p.name, COALESCE(SUM(oi.quantity_purchased), 0) as sales
+            FROM plant_inventory p LEFT JOIN order_items oi ON p.plant_id = oi.plant_id
+            GROUP BY p.plant_id, p.name ORDER BY sales DESC LIMIT 5
+        `);
+
+        // 3. Get Revenue History (7 Days)
+        const [revenueRaw] = await pool.query(`
+            SELECT DATE_FORMAT(order_date, '%Y-%m-%d') as date, SUM(total_amount) as daily_revenue
+            FROM orders WHERE order_date >= DATE_SUB(NOW(), INTERVAL 7 DAY) GROUP BY date ORDER BY date ASC
+        `);
+        const revenueTrend = revenueRaw.map(row => ({ date: row.date, daily_revenue: parseFloat(row.daily_revenue) }));
+        
+        // 4. Get Alerts & Recent Orders
+        const [lowStock] = await pool.query(`SELECT name, quantity FROM plant_inventory WHERE quantity < 20 ORDER BY quantity ASC LIMIT 5`);
+        const [recentOrders] = await pool.query(`
+            SELECT o.order_id, u.first_name, o.total_amount, o.status, o.order_date
+            FROM orders o JOIN users u ON o.buyer_id = u.id ORDER BY o.order_date DESC LIMIT 5
+        `);
+
+        res.json({
+            success: true,
+            stats: { 
+                revenue: orderStats[0].total_revenue, 
+                orders: orderStats[0].total_orders, 
+                products: productStats[0].total_products, 
+                customers: customerStats[0].total_customers 
+            },
+            chartData: topProducts, alerts: lowStock, recentOrders: recentOrders, revenueTrend: revenueTrend
+        });
+    } catch (err) {
+        console.error("Dashboard Error:", err);
+        res.status(500).json({ success: false, message: "Server Error" });
+    }
+});
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`✅ Server running on ${PORT}`));
