@@ -503,7 +503,7 @@ app.get('/api/admin/dashboard', async (req, res) => {
         const revenueTrend = revenueRaw.map(row => ({ date: row.date, daily_revenue: parseFloat(row.daily_revenue) }));
         
         // 4. Get Alerts & Recent Orders
-        const [lowStock] = await pool.query(`SELECT name, quantity FROM plant_inventory WHERE quantity < 20 ORDER BY quantity ASC LIMIT 5`);
+        const [lowStock] = await pool.query(`SELECT name, quantity FROM plant_inventory WHERE quantity < 5 ORDER BY quantity ASC LIMIT 5`);
         const [recentOrders] = await pool.query(`
             SELECT o.order_id, u.first_name, o.total_amount, o.status, o.order_date
             FROM orders o JOIN users u ON o.buyer_id = u.id ORDER BY o.order_date DESC LIMIT 5

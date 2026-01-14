@@ -69,32 +69,34 @@ const Dashboard = () => {
       <section className="overview-header">
         <h2>Your overview</h2>
         <div className="filters">
-          <button><FiFilter /> Filter</button>
-          <button>Date range: Last 7 days <FiChevronDown /></button>
-          <button><FiCalendar /> Compare: Previous period <FiChevronDown /></button>
+         
         </div>
       </section>
 
       {/* --- STAT CARDS (REAL DATA) --- */}
       <section className="stat-cards">
         <div className="stat-card">
-          <span className="card-title">Total Plants <FiInfo /></span>
+          <span className="card-title">Total Plants</span>
           <div className="card-value">{data.stats.products}</div>
           <div className="card-change positive"><FiArrowUp /> Active Inventory</div>
         </div>
+
         <div className="stat-card">
-          <span className="card-title">Total Orders <FiInfo /></span>
+          <span className="card-title">Total Orders</span>
           <div className="card-value">{data.stats.orders}</div>
           <div className="card-change positive"><FiCheckCircle /> Completed</div>
         </div>
+
         <div className="stat-card">
-          <span className="card-title">Total Customers <FiInfo /></span>
+          <span className="card-title">Total Customers</span>
           <div className="card-value">{data.stats.customers}</div>
+          {/* Kept this bottom icon for alignment with other cards */}
           <div className="card-change neutral"><FiInfo /> Registered</div>
         </div>
+
         <div className="stat-card">
-          <span className="card-title">Total Revenue <FiInfo /></span>
-          <div className="card-value">${data.stats.revenue}</div>
+          <span className="card-title">Total Revenue</span>
+          <div className="card-value">${Number(data.stats.revenue).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
           <div className="card-change positive"><FiTrendingUp /> Sales</div>
         </div>
       </section>
@@ -108,7 +110,7 @@ const Dashboard = () => {
             <h4>Sales Performance (7 Days) <FiInfo /></h4>
           </div>
           <div className="chart-value">
-            <div><span className="chart-label">Revenue</span><strong>${data.stats.revenue}</strong></div>
+            <div><span className="chart-label">Revenue</span><strong>${Number(data.stats.revenue).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong></div>
           </div>
           <div style={{ width: '100%', height: 200 }}>
             <ResponsiveContainer>
@@ -156,13 +158,18 @@ const Dashboard = () => {
           </div>
           <div className="capacity-list">
             <div className="capacity-header">
-              <span>Order ID</span>
+              <span>Customer</span>
               <span>Status</span>
               <span>Amount</span>
             </div>
             {data.recentOrders.map((order) => (
               <div key={order.order_id} className="capacity-item">
-                <span className="location">#{order.order_id}</span>
+                
+                {/* CHANGED HERE: Shows Name instead of ID */}
+                <span className="location" style={{fontWeight: '600'}}>
+                    {order.first_name || 'Customer'}
+                </span>
+
                 <span className="system" style={{color: order.status === 'Completed' ? 'green' : 'orange'}}>
                     {order.status}
                 </span>
@@ -189,7 +196,7 @@ const Dashboard = () => {
             {data.alerts.map((item, index) => (
               <div key={index} className="alert-item">
                 <FiAlertTriangle className="icon red" />
-                <span><b>{item.name}</b> is running low ({item.quantity} left)</span>
+                <span><b>{item.name}</b> is {item.quantity === 0 ? "Out of Stock" : `running low (${item.quantity} left)`}</span>
                 <FiChevronRight className="arrow" />
               </div>
             ))}
