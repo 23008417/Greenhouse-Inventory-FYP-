@@ -81,10 +81,6 @@ const Sidebar = () => {
           Plants
         </ExpandableNavItem>
 
-        <NavItem to="/dashboard/orders" icon={<FiShoppingCart />}>
-          Orders
-        </NavItem>
-
         <NavItem to="/dashboard/customers" icon={<FiUsers />}>
           Customers
         </NavItem>

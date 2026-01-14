@@ -184,6 +184,49 @@ app.get('/api/auth/me', authenticate, (req, res) => {
 });
 
 /* =====================
+   CUSTOMERS
+===================== */
+app.get('/api/customers', authenticate, async (req, res) => {
+  if (req.user.role !== 'Admin') {
+    return res.status(403).json({ error: 'Admin only' });
+  }
+
+  try {
+    const [customers] = await pool.query(
+      `SELECT 
+        id,
+        email,
+        first_name,
+        last_name,
+        created_at,
+        (SELECT COUNT(*) FROM orders WHERE buyer_id = users.id) as total_orders,
+        (SELECT COALESCE(SUM(total_amount), 0) FROM orders WHERE buyer_id = users.id) as total_spent,
+        (SELECT MAX(order_date) FROM orders WHERE buyer_id = users.id) as last_order_date
+      FROM users 
+      WHERE role = 'Buyer'
+      ORDER BY created_at DESC`
+    );
+
+    // Format the response to match what the frontend expects
+    const formattedCustomers = customers.map(customer => ({
+      id: customer.id,
+      name: `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || customer.email.split('@')[0],
+      email: customer.email,
+      created_at: customer.created_at,
+      last_order_date: customer.last_order_date,
+      total_orders: customer.total_orders,
+      total_spent: parseFloat(customer.total_spent || 0),
+      status: customer.total_orders > 0 ? 'Active' : 'New'
+    }));
+
+    res.json(formattedCustomers);
+  } catch (err) {
+    console.error('Failed to fetch customers:', err);
+    res.status(500).json({ error: 'Failed to fetch customers' });
+  }
+});
+
+/* =====================
    PLANTS
 ===================== */
 app.post('/api/plants/add', authenticate, upload.single('image'), async (req, res) => {

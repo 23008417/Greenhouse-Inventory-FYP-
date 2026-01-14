@@ -9,7 +9,7 @@ import GrowingSystems from './GrowingSystems/GrowingSystems';
 import AddGrowingSystem from './GrowingSystems/AddGrowingSystem';
 import AddSystemType from './GrowingSystems/AddSystemType';
 import AddSystemTypeForm from './GrowingSystems/AddSystemTypeForm';
-import Orders from './Orders/Orders';
+import Customers from './Customers/Customers';
 import './DashboardLayout.css';
 
 const DashboardLayout = () => {
@@ -43,8 +43,7 @@ const DashboardLayout = () => {
             element={<AddSystemTypeForm />}
           />
           
-          <Route path="orders" element={<Orders />} />
-          <Route path="/customers" element={<div style={{padding: '2rem'}}>Customers - Coming Soon</div>} />
+          <Route path="customers" element={<Customers />} />
           <Route path="/reports" element={<div style={{padding: '2rem'}}>Reports - Coming Soon</div>} />
           <Route path="/event" element={<div style={{padding: '2rem'}}> Event - Coming Soon</div>} />
           <Route path="/cropmgmt" element={<div style={{padding: '2rem'}}> Crop Management - Coming Soon</div>} />
