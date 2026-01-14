@@ -44,9 +44,9 @@ const DashboardLayout = () => {
           />
           
           <Route path="customers" element={<Customers />} />
-          <Route path="/reports" element={<div style={{padding: '2rem'}}>Reports - Coming Soon</div>} />
-          <Route path="/event" element={<div style={{padding: '2rem'}}> Event - Coming Soon</div>} />
-          <Route path="/cropmgmt" element={<div style={{padding: '2rem'}}> Crop Management - Coming Soon</div>} />
+          <Route path="reports" element={<div style={{padding: '2rem'}}>Reports - Coming Soon</div>} />
+          <Route path="event" element={<div style={{padding: '2rem'}}> Event - Coming Soon</div>} />
+          <Route path="cropmgmt" element={<div style={{padding: '2rem'}}> Crop Management - Coming Soon</div>} />
 
           {/* Fallback */}
           <Route path="*" element={<Navigate to="." />} />
