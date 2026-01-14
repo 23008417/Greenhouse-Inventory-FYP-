@@ -70,6 +70,7 @@ const pool = mysql.createPool({
 
 /* =====================
    PAYPAL CLIENT
+   - Controlled via PAYPAL_MODE env: 'sandbox' (default) or 'live'
 ===================== */
 const createPayPalClient = () => {
   const clientId = process.env.PAYPAL_CLIENT_ID;
@@ -77,7 +78,8 @@ const createPayPalClient = () => {
 
   if (!clientId || !clientSecret) return null;
 
-  const Environment = process.env.NODE_ENV === 'production'
+  const mode = (process.env.PAYPAL_MODE || 'sandbox').toLowerCase();
+  const Environment = mode === 'live'
     ? paypal.core.LiveEnvironment
     : paypal.core.SandboxEnvironment;
 
@@ -85,9 +87,6 @@ const createPayPalClient = () => {
   return new paypal.core.PayPalHttpClient(env);
 };
 
-/* =====================
-   AUTH HELPERS
-===================== */
 const generateToken = (userId) =>
   jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: '7d' });
 
@@ -367,35 +366,121 @@ app.post('/api/paypal/capture', authenticate, async (req, res) => {
     return res.status(400).json({ error: 'Invalid payload' });
   }
 
+  // We get a specific connection so we can use a "Transaction"
+  // (This ensures we don't save the order if the inventory update fails)
+  const connection = await pool.getConnection();
+
   try {
-    // On the client we already call actions.order.capture().
-    // Here we just GET the order to verify it and then
-    // treat it as confirmed on our side.
+    // 1. Verify with PayPal first
     const request = new paypal.orders.OrdersGetRequest(orderID);
     const response = await client.execute(request);
-
     const status = response.result.status;
+
     if (status !== 'COMPLETED') {
+      connection.release();
       return res.status(400).json({ error: `Unexpected PayPal status: ${status}` });
     }
 
-    // TODO: persist order + decrement inventory using `items` and `total`.
+    // 2. Start Database Transaction
+    await connection.beginTransaction();
+
+    // 3. Insert into 'orders' table
+    const [orderResult] = await connection.query(
+      `INSERT INTO orders (buyer_id, total_amount, status, order_date) VALUES (?, ?, 'Completed', NOW())`,
+      [req.user.id, Number(total)]
+    );
+    const newOrderId = orderResult.insertId;
+
+    // 4. Insert items and update inventory
+    for (const item of items) {
+      // Save item to order_items
+      await connection.query(
+        `INSERT INTO order_items (order_id, plant_id, quantity_purchased, unit_price_at_sale)
+         VALUES (?, ?, ?, ?)`,
+        [newOrderId, item.plant_id, item.quantity_purchased || 1, item.unit_price_at_sale]
+      );
+
+      // Subtract stock from plant_inventory
+      await connection.query(
+        `UPDATE plant_inventory SET quantity = GREATEST(quantity - ?, 0) WHERE plant_id = ?`,
+        [item.quantity_purchased || 1, item.plant_id]
+      );
+    }
+
+    // 5. Commit (Save) the transaction
+    await connection.commit();
+    connection.release();
+
+    console.log(`✅ Order #${newOrderId} saved to database!`);
 
     res.json({
       success: true,
       orderId: orderID,
+      dbOrderId: newOrderId,
       paypalStatus: status,
     });
+
   } catch (err) {
-    console.error('PayPal verification failed', err);
-    res.status(500).json({ error: 'Failed to verify PayPal order' });
+    // If anything fails, undo changes
+    await connection.rollback();
+    connection.release();
+    console.error('PayPal verification/DB save failed', err);
+    res.status(500).json({ error: 'Failed to process order' });
   }
 });
-
 /* =====================
    STATIC FILES
 ===================== */
 app.use('/uploads', express.static('uploads'));
+
+/* =========================================
+   ADMIN DASHBOARD API (Your Custom Route)
+   ========================================= */
+app.get('/api/admin/dashboard', async (req, res) => {
+    try {
+        console.log("📊 Fetching dashboard data...");
+        
+        // 1. Get Stats
+        const [orderStats] = await pool.query(`SELECT COUNT(*) as total_orders, COALESCE(SUM(total_amount), 0) as total_revenue FROM orders`);
+        const [productStats] = await pool.query(`SELECT COUNT(*) as total_products FROM plant_inventory`);
+        const [customerStats] = await pool.query(`SELECT COUNT(*) as total_customers FROM users WHERE role = 'Buyer'`);
+        
+        // 2. Get Top Products
+        const [topProducts] = await pool.query(`
+            SELECT p.name, COALESCE(SUM(oi.quantity_purchased), 0) as sales
+            FROM plant_inventory p LEFT JOIN order_items oi ON p.plant_id = oi.plant_id
+            GROUP BY p.plant_id, p.name ORDER BY sales DESC LIMIT 5
+        `);
+
+        // 3. Get Revenue History (7 Days)
+        const [revenueRaw] = await pool.query(`
+            SELECT DATE_FORMAT(order_date, '%Y-%m-%d') as date, SUM(total_amount) as daily_revenue
+            FROM orders WHERE order_date >= DATE_SUB(NOW(), INTERVAL 7 DAY) GROUP BY date ORDER BY date ASC
+        `);
+        const revenueTrend = revenueRaw.map(row => ({ date: row.date, daily_revenue: parseFloat(row.daily_revenue) }));
+        
+        // 4. Get Alerts & Recent Orders
+        const [lowStock] = await pool.query(`SELECT name, quantity FROM plant_inventory WHERE quantity < 20 ORDER BY quantity ASC LIMIT 5`);
+        const [recentOrders] = await pool.query(`
+            SELECT o.order_id, u.first_name, o.total_amount, o.status, o.order_date
+            FROM orders o JOIN users u ON o.buyer_id = u.id ORDER BY o.order_date DESC LIMIT 5
+        `);
+
+        res.json({
+            success: true,
+            stats: { 
+                revenue: orderStats[0].total_revenue, 
+                orders: orderStats[0].total_orders, 
+                products: productStats[0].total_products, 
+                customers: customerStats[0].total_customers 
+            },
+            chartData: topProducts, alerts: lowStock, recentOrders: recentOrders, revenueTrend: revenueTrend
+        });
+    } catch (err) {
+        console.error("Dashboard Error:", err);
+        res.status(500).json({ success: false, message: "Server Error" });
+    }
+});
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`✅ Server running on ${PORT}`));
