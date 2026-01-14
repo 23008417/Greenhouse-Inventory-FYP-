@@ -2,10 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { FiSearch, FiFilter, FiMoreVertical, FiUserPlus } from 'react-icons/fi';
 import './Customers.css';
 
+const API_URL = process.env.REACT_APP_API_URL || '';
+
 const Customers = () => {
   const [customers, setCustomers] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [selectedCustomers, setSelectedCustomers] = useState([]);
 
   useEffect(() => {
@@ -14,20 +17,29 @@ const Customers = () => {
 
   const fetchCustomers = async () => {
     const token = localStorage.getItem('token');
-    if (!token) return;
+    if (!token) {
+      setError('Please login');
+      setLoading(false);
+      return;
+    }
 
     try {
-      const response = await fetch('http://localhost:5000/api/customers', {
+      const response = await fetch(`${API_URL}/api/customers`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
       if (response.ok) {
         const data = await response.json();
         setCustomers(data);
+        setError('');
+      } else {
+        const data = await response.json();
+        setError(data.error || 'Failed to load customers');
       }
       setLoading(false);
     } catch (err) {
       console.error('Failed to fetch customers:', err);
+      setError('Network error');
       setLoading(false);
     }
   };
@@ -78,6 +90,10 @@ const Customers = () => {
 
   if (loading) {
     return <div className="customers-page">Loading customers...</div>;
+  }
+
+  if (error) {
+    return <div className="customers-page"><p className="error-message">{error}</p></div>;
   }
 
   return (
