@@ -1,18 +1,66 @@
 import React, { useEffect, useState } from 'react';
+import mqtt from 'mqtt'; // <--- NEW IMPORT
 import { 
   FiFilter, FiChevronDown, FiArrowUp, FiArrowDown,
   FiCheckCircle, FiTrendingUp, FiTrendingDown, FiAlertCircle, FiChevronRight, FiCalendar,
   FiInfo, FiClock, FiAlertTriangle
 } from 'react-icons/fi';
 import { 
-  BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid
-} from 'recharts';
+  BarChart, Bar, LineChart, Line, AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid 
+} from 'recharts'; // <--- ADDED AreaChart, Area to this list
 import './Dashboard.css';
 
 const Dashboard = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // --- HIVEMQ LIVE SENSOR LOGIC (TEMP + HUMIDITY) ---
+  const [sensorData, setSensorData] = useState([]);
+
+  useEffect(() => {
+    // 1. Connect to HiveMQ
+    const client = mqtt.connect('wss://broker.hivemq.com:8884/mqtt'); // Or use the EMQX URL if that worked better for you
+    const topic = 'fyp/greenhouse/23008417/combined'; // New topic for clean data
+
+    client.on('connect', () => {
+      console.log('✅ Connected to HiveMQ Cloud');
+      client.subscribe(topic);
+      
+      // 2. Publish Fake Temp AND Humidity every 3 seconds
+      const interval = setInterval(() => {
+         const fakeTemp = (24 + Math.random() * 2).toFixed(1);
+         const fakeHum = (55 + Math.random() * 10).toFixed(0); // Random Humidity 55-65%
+         
+         // Send both as a JSON package
+         const payload = JSON.stringify({ temp: fakeTemp, hum: fakeHum });
+         client.publish(topic, payload);
+      }, 3000);
+
+      return () => clearInterval(interval);
+    });
+
+    client.on('message', (receivedTopic, message) => {
+      try {
+        // 3. Receive and Parse JSON
+        const data = JSON.parse(message.toString());
+        const now = new Date();
+        const timeLabel = now.getHours() + ':' + now.getMinutes() + ':' + now.getSeconds();
+
+        setSensorData(current => {
+          const updated = [...current, { time: timeLabel, temp: data.temp, hum: data.hum }];
+          if (updated.length > 20) updated.shift();
+          return updated;
+        });
+      } catch (err) {
+        console.error("Error parsing MQTT message:", err);
+      }
+    });
+
+    return () => {
+      if (client) client.end();
+    };
+  }, []);
 
   useEffect(() => {
     // --- SMART URL SELECTION ---
@@ -107,7 +155,7 @@ const Dashboard = () => {
         {/* 1. SALES LINE CHART (Revenue History) */}
         <div className="chart-card">
           <div className="chart-header">
-            <h4>Sales Performance (7 Days) <FiInfo /></h4>
+            <h4>Sales Performance (7 Days) </h4>
           </div>
           <div className="chart-value">
             <div><span className="chart-label">Revenue</span><strong>${Number(data.stats.revenue).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong></div>
@@ -131,10 +179,88 @@ const Dashboard = () => {
           </div>
         </div>
 
+        {/* 2. LIVE HUMIDITY (BLUE) */}
+        <div className="chart-card">
+          <div className="chart-header">
+            <h4>Live Humidity 💧</h4>
+          </div>
+          <div className="chart-value">
+            <span className="chart-label">Current: </span>
+            <strong>{sensorData.length > 0 ? sensorData[sensorData.length - 1].hum : '--'}%</strong>
+          </div>
+          <div style={{ width: '100%', height: 200 }}>
+            <ResponsiveContainer>
+              <AreaChart data={sensorData}>
+                <defs>
+                  <linearGradient id="colorHum" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <XAxis dataKey="time" tick={{fontSize: 10}} interval="preserveStartEnd"/>
+                <YAxis domain={['auto', 'auto']} tick={{fontSize: 10}} width={30}/>
+                <Tooltip />
+                <Area type="monotone" dataKey="hum" stroke="#3b82f6" fill="url(#colorHum)" isAnimationActive={false} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* --- NEW: LIVE HIVEMQ TEMPERATURE --- */}
+        <div className="chart-card">
+          <div className="chart-header">
+            <h4>Live Greenhouse Temp 🔴 <FiInfo title="Real-time data streaming via HiveMQ MQTT" /></h4>
+          </div>
+          <div className="chart-value">
+            <div>
+                <span className="chart-label">Current Temp</span>
+                <strong>
+                    {sensorData.length > 0 ? sensorData[sensorData.length - 1].temp : '--'}°C
+                </strong>
+            </div>
+          </div>
+          <div style={{ width: '100%', height: 200 }}>
+            <ResponsiveContainer>
+              <AreaChart data={sensorData}>
+                <defs>
+                  <linearGradient id="colorTemp" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                
+                {/* UPDATED: Visible Time Axis */}
+                <XAxis 
+                    dataKey="time" 
+                    tick={{fontSize: 10}} 
+                    interval="preserveStartEnd"
+                />
+                
+                {/* NEW: Temperature Scale Axis */}
+                <YAxis 
+                    domain={['auto', 'auto']} 
+                    tick={{fontSize: 10}} 
+                    width={30}
+                />
+                
+                <Tooltip />
+                <Area 
+                    type="monotone" 
+                    dataKey="temp" 
+                    stroke="#ef4444" 
+                    fillOpacity={1} 
+                    fill="url(#colorTemp)" 
+                    isAnimationActive={false} 
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
         {/* 2. TOP PRODUCTS BAR CHART */}
         <div className="chart-card">
           <div className="chart-header">
-            <h4>Top Performing Crops <FiInfo /></h4>
+            <h4>Top Performing Crops </h4>
           </div>
           <div style={{ width: '100%', height: 250 }}>
             <ResponsiveContainer>
@@ -181,11 +307,7 @@ const Dashboard = () => {
             {data.recentOrders.length === 0 && <div style={{padding:'10px'}}>No recent orders.</div>}
           </div>
         </div>
-      </section>
 
-      {/* --- BOTTOM ROW (ALERTS) --- */}
-      <section className="bottom-row">
-        
         {/* Low Stock Alerts */}
         <div className="card alerts-card">
           <div className="card-header">
@@ -202,6 +324,13 @@ const Dashboard = () => {
             ))}
           </div>
         </div>
+
+      </section>
+
+      {/* --- BOTTOM ROW (ALERTS) --- */}
+      <section className="bottom-row">
+        
+       
 
       </section>
     </main>
