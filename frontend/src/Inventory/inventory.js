@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FiBarChart2, FiSearch } from 'react-icons/fi';
+import { FiBarChart2, FiSearch, FiMoreVertical } from 'react-icons/fi';
 import './Inventory.css';
 
 const API_URL = process.env.REACT_APP_API_URL || '';
@@ -13,6 +13,7 @@ const Inventory = () => {
   const [sortDirection, setSortDirection] = useState('asc');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const [openMenuId, setOpenMenuId] = useState(null);
 
   const categories = [
     'Leafy Greens',
@@ -91,6 +92,43 @@ const Inventory = () => {
 
     setFilteredPlants(result);
   }, [searchTerm, selectedCategory, sortBy, sortDirection, plants]);
+
+  const toggleMenu = (plantId) => {
+    setOpenMenuId(prev => (prev === plantId ? null : plantId));
+  };
+
+  const handleUnlistFromStore = async (plant) => {
+    if (!window.confirm('Remove this plant from the store?')) return;
+
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setError('Please login');
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_URL}/api/plants/${plant.plant_id}/price`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ price: 0 }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setError(data.error || 'Failed to remove from store');
+        return;
+      }
+
+      setPlants(prev => prev.map(p =>
+        p.plant_id === plant.plant_id ? { ...p, price: 0 } : p
+      ));
+    } catch {
+      setError('Network error');
+    }
+  };
 
   const handleDelete = async (plantId) => {
     if (!window.confirm('Delete this plant from inventory?')) return;
@@ -219,6 +257,7 @@ const Inventory = () => {
       {filteredPlants.length === 0 ? (
         <p>Add plants to begin</p>
       ) : (
+          <div className="inventory-table-wrapper">
         <table>
           <thead>
             <tr>
@@ -249,7 +288,7 @@ const Inventory = () => {
                     : 'N/A'}
                 </td>
                 <td>
-                  {typeof p.price === 'number' && !Number.isNaN(p.price)
+                  {Number.isFinite(Number(p.price))
                     ? `$${Number(p.price).toFixed(2)}`
                     : '-'}
                 </td>
@@ -261,17 +300,53 @@ const Inventory = () => {
                   />
                 </td>
                 <td>
-                  <button onClick={() => handleListForSale(p)}>
-                    Send to Store
-                  </button>
-                  <button onClick={() => handleDelete(p.plant_id)}>
-                    Delete
-                  </button>
+                  <div className="inventory-actions">
+                    <button
+                      className="inventory-menu-trigger"
+                      onClick={() => toggleMenu(p.plant_id)}
+                    >
+                        <FiMoreVertical />
+                    </button>
+                    {openMenuId === p.plant_id && (
+                      <div className="inventory-menu">
+                        <button
+                          className="inventory-btn inventory-btn-primary"
+                          onClick={() => {
+                            toggleMenu(p.plant_id);
+                            handleListForSale(p);
+                          }}
+                        >
+                          Sell
+                        </button>
+                        {Number.isFinite(Number(p.price)) && Number(p.price) > 0 && (
+                          <button
+                            className="inventory-btn"
+                            onClick={() => {
+                              toggleMenu(p.plant_id);
+                              handleUnlistFromStore(p);
+                            }}
+                          >
+                            Remove from Store
+                          </button>
+                        )}
+                        <button
+                          className="inventory-btn inventory-btn-danger"
+                          onClick={() => {
+                            toggleMenu(p.plant_id);
+                            handleDelete(p.plant_id);
+                          }}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
+          </div>
       )}
     </div>
   );
