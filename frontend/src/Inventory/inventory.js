@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FiBarChart2, FiSearch, FiMoreVertical } from 'react-icons/fi';
 import './Inventory.css';
-
-const API_URL = process.env.REACT_APP_API_URL || '';
+import { API_URL } from '../apiConfig';
 
 const Inventory = () => {
   const [plants, setPlants] = useState([]);

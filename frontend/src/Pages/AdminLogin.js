@@ -2,9 +2,7 @@ import React, { useState } from 'react';
 // import { FcGoogle } from 'react-icons/fc';
 import { useNavigate } from 'react-router-dom';
 import './Auth.css';
-
-// Backend base URL: set REACT_APP_API_URL in production, fallback to localhost in dev
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+import { API_URL } from '../apiConfig';
 
 const AdminLogin = ({ onLogin }) => {
   const navigate = useNavigate();

@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FiSearch, FiFilter, FiMoreVertical, FiUserPlus } from 'react-icons/fi';
 import './Customers.css';
-
-const API_URL = process.env.REACT_APP_API_URL || '';
+import { API_URL } from '../apiConfig';
 
 const Customers = () => {
   const [customers, setCustomers] = useState([]);

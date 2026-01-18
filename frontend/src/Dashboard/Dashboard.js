@@ -9,6 +9,7 @@ import {
   BarChart, Bar, LineChart, Line, AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid 
 } from 'recharts'; // <--- ADDED AreaChart, Area to this list
 import './Dashboard.css';
+import { API_URL } from '../apiConfig';
 
 const Dashboard = () => {
   const [data, setData] = useState(null);
@@ -63,19 +64,12 @@ const Dashboard = () => {
   }, []);
 
   useEffect(() => {
-    // --- SMART URL SELECTION ---
-    // 1. Local: Use localhost:5000
-    // 2. Production: Use the REAL Backend URL directly (cropflow-backend)
-    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    
-    // CONFIRMED BACKEND URL from your team
-    const LIVE_BACKEND_URL = 'https://cropflow-backend.onrender.com';
-    
-    const API_BASE_URL = isLocal ? 'http://localhost:5000' : LIVE_BACKEND_URL;
+    console.log(`Fetching from: ${API_URL}/api/admin/dashboard`);
 
-    console.log(`Fetching from: ${API_BASE_URL}/api/admin/dashboard`);
-
-    fetch(`${API_BASE_URL}/api/admin/dashboard`)
+    const token = localStorage.getItem('token');
+    fetch(`${API_URL}/api/admin/dashboard`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    })
       .then(async (res) => {
         const text = await res.text();
         try {

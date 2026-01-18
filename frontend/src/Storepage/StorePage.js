@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { MdSettings, MdShoppingCart, MdLogout, MdSearch } from 'react-icons/md';
 import './StorePage.css';
-
-const API_URL = process.env.REACT_APP_API_URL || '';
+import { API_URL, buildImageUrl } from '../apiConfig';
 
 const StorePage = ({ onLogout, user, cartItems, setCartItems }) => {
   const [cartCount, setCartCount] = useState(cartItems.length);
@@ -11,6 +10,7 @@ const StorePage = ({ onLogout, user, cartItems, setCartItems }) => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [toast, setToast] = useState(null);
 
   useEffect(() => {
     setCartCount(cartItems.length);
@@ -38,9 +38,7 @@ const StorePage = ({ onLogout, user, cartItems, setCartItems }) => {
             id: item.plant_id,
             name: item.name,
             price: Number(item.price) || 0,
-            img: item.image_url?.startsWith('http')
-              ? item.image_url
-              : `${API_URL}${item.image_url}`,
+            img: buildImageUrl(item.image_url),
           }));
           setProducts(mapped);
         } else {
@@ -58,6 +56,8 @@ const StorePage = ({ onLogout, user, cartItems, setCartItems }) => {
 
   const handleAddToCart = (product) => {
     setCartItems(prev => [...prev, product]);
+    setToast(`${product.name.toUpperCase()} added to cart`);
+    setTimeout(() => setToast(null), 2000);
   };
 
   const filteredProducts = products.filter(product =>
@@ -152,6 +152,12 @@ const StorePage = ({ onLogout, user, cartItems, setCartItems }) => {
 
         </main>
       </div>
+
+      {toast && (
+        <div className="store-toast">
+          {toast}
+        </div>
+      )}
     </div>
   );
 };

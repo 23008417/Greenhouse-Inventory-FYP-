@@ -13,8 +13,7 @@ import ProtectedRoute from './ProtectedRoute';
 import './App.css';
 import './Pages/Auth.css';
 import './DashboardLayout.css';
-
-const API_URL = process.env.REACT_APP_API_URL || '';  // Relative for prod
+import { API_URL } from './apiConfig';
 
 const paypalOptions = {
   "client-id": process.env.REACT_APP_PAYPAL_CLIENT_ID || 'AWuacnvx2o_IhKJ6DLq4o8tk75LlO2ovipWzZ1cncKfrkGB2-zlOvSSBwp7leO401oMHK6U7eZrLkdWo',  // Fallback for dev; use your real ID

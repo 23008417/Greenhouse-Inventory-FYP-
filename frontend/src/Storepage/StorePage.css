@@ -11,6 +11,21 @@
   letter-spacing: 1px; /* Slight spacing for premium feel */
 }
 
+.store-toast {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #000;
+  color: #fff;
+  padding: 10px 20px;
+  font-size: 12px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  border: 1px solid #000;
+  z-index: 1100;
+}
+
 /* Navbar - Simple, fixed, minimal icons */
 .store-navbar {
   position: fixed;

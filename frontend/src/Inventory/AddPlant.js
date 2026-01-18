@@ -2,9 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiArrowLeft, FiUpload } from 'react-icons/fi';
 import './AddPlant.css';
-
-// Use the same configurable API base URL as the rest of the app
-const API_URL = process.env.REACT_APP_API_URL || '';
+import { API_URL } from '../apiConfig';
 
 const AddPlant = () => {
   const navigate = useNavigate();

@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FcGoogle } from 'react-icons/fc';
 import './Auth.css';
-
-const API_URL = process.env.REACT_APP_API_URL || '';  // Relative for prod
+import { API_URL } from '../apiConfig';
 
 const Signup = ({ onLogin }) => {
   const navigate = useNavigate();

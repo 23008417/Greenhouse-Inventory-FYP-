@@ -2,12 +2,7 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { PayPalButtons, usePayPalScriptReducer } from '@paypal/react-paypal-js';
 import "./CartPage.css";
-
-const API_URL = window.location.hostname === 'localhost' 
-  ? 'http://localhost:5000' 
-  : 'https://cropflow-backend.onrender.com';
-
-//const API_URL = process.env.REACT_APP_API_URL || '';  // Relative for prod
+import { API_URL } from "../apiConfig";
 
 const CartPage = ({ cartItems, setCartItems, user }) => {
   const navigate = useNavigate();
