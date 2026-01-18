@@ -1,26 +1,37 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import './Auth.css';
+import './OrderConfirmation.css';
 
 const OrderConfirmation = () => {
   const navigate = useNavigate();
 
+  const handleBackToStore = () => {
+    navigate('/storepage');
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    navigate('/');
+  };
+
   return (
-    <div className="auth-background">
-      <header className="auth-header">
-        <span style={{ fontWeight: 600 }}>Cropflow</span>
-      </header>
+    <div className="order-confirmation-page">
+      <div className="order-confirmation-card">
+        <h1 className="order-confirmation-title">Order Confirmed</h1>
+        <p className="order-confirmation-message">Your payment has been processed successfully.</p>
+        <p className="order-confirmation-message">You can return to the store or sign out.</p>
 
-      <div className="auth-card">
-        <h2>Order Confirmed</h2>
-        <p>Your payment has been processed successfully.</p>
-        <p>You can now return to the store or view your dashboard.</p>
-
-        <div style={{ marginTop: '1.5rem', display: 'flex', gap: '0.75rem' }}>
-          <button className="primary-btn" onClick={() => navigate('/storepage')}>
+        <div className="order-confirmation-actions">
+          <button
+            className="order-confirmation-btn primary"
+            onClick={handleBackToStore}
+          >
             Back to Store
           </button>
-          <button className="secondary-btn" onClick={() => navigate('/LandingPage')}>
+          <button
+            className="order-confirmation-btn secondary"
+            onClick={handleLogout}
+          >
             Log Out
           </button>
         </div>

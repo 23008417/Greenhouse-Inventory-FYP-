@@ -1,0 +1,75 @@
+/* OrderConfirmation.css - Minimal style inspired by StorePage/CartPage */
+
+.order-confirmation-page {
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  background-color: #f8f8f8;
+  color: #000;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.order-confirmation-card {
+  background-color: #ffffff;
+  border: 1px solid #ccc;
+  padding: 40px 32px;
+  max-width: 480px;
+  width: 100%;
+  text-align: center;
+}
+
+.order-confirmation-title {
+  font-size: 28px;
+  font-weight: bold;
+  margin-bottom: 16px;
+}
+
+.order-confirmation-message {
+  font-size: 12px;
+  color: #555;
+  margin-bottom: 6px;
+}
+
+.order-confirmation-actions {
+  margin-top: 32px;
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.order-confirmation-btn {
+  padding: 10px 22px;
+  font-size: 12px;
+  border-radius: 0;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+.order-confirmation-btn.primary {
+  background-color: #000;
+  color: #fff;
+  border: 1px solid #000;
+}
+
+.order-confirmation-btn.primary:hover {
+  background-color: #333;
+}
+
+.order-confirmation-btn.secondary {
+  background-color: transparent;
+  color: #000;
+  border: 1px solid #000;
+}
+
+.order-confirmation-btn.secondary:hover {
+  background-color: #000;
+  color: #fff;
+}
