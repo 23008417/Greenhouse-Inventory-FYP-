@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { FiBarChart2, FiSearch, FiMoreVertical } from 'react-icons/fi';
+import { useNavigate } from 'react-router-dom';
 import './Inventory.css';
 import { API_URL } from '../apiConfig';
 
 const Inventory = () => {
+  const navigate = useNavigate();
   const [plants, setPlants] = useState([]);
   const [filteredPlants, setFilteredPlants] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -317,25 +319,25 @@ const Inventory = () => {
                         >
                           Sell
                         </button>
-                        {Number.isFinite(Number(p.price)) && Number(p.price) > 0 && (
-                          <button
-                            className="inventory-btn"
-                            onClick={() => {
-                              toggleMenu(p.plant_id);
-                              handleUnlistFromStore(p);
-                            }}
-                          >
-                            Remove from Store
-                          </button>
-                        )}
+                        {/* {Number.isFinite(Number(p.price)) && Number(p.price) > 0 && (
+                          // <button
+                          //   className="inventory-btn"
+                          //   onClick={() => {
+                          //     toggleMenu(p.plant_id);
+                          //     handleUnlistFromStore(p);
+                          //   }}
+                          // >
+                          //   Remove from Store
+                          // </button>
+                        )} */}
                         <button
-                          className="inventory-btn inventory-btn-danger"
+                          className="inventory-btn"
                           onClick={() => {
                             toggleMenu(p.plant_id);
-                            handleDelete(p.plant_id);
+                            navigate(`edit/${p.plant_id}`);
                           }}
                         >
-                          Delete
+                          Modify
                         </button>
                       </div>
                     )}

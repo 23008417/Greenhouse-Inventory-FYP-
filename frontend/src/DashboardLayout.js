@@ -5,6 +5,7 @@ import Sidebar from './Sidebar/Sidebar';
 import Dashboard from './Dashboard/Dashboard';
 import Inventory from './Inventory/inventory';
 import AddPlant from './Inventory/AddPlant';
+import EditPlant from './Inventory/EditPlant';
 import GrowingSystems from './GrowingSystems/GrowingSystems';
 import AddGrowingSystem from './GrowingSystems/AddGrowingSystem';
 import AddSystemType from './GrowingSystems/AddSystemType';
@@ -27,6 +28,7 @@ const DashboardLayout = () => {
           {/* Inventory */}
           <Route path="plants/inventory" element={<Inventory />} />
           <Route path="plants/inventory/addplant" element={<AddPlant />} />
+          <Route path="plants/inventory/edit/:id" element={<EditPlant />} />
 
           {/* Growing systems */}
           <Route path="plants/growing-systems" element={<GrowingSystems />} />

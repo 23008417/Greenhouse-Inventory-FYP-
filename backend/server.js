@@ -302,6 +302,42 @@ app.get('/api/plants', authenticate, async (req, res) => {
   }
 });
 
+// Get a single plant by id (for editing)
+app.get('/api/plants/:id', authenticate, async (req, res) => {
+  const plantId = Number(req.params.id);
+
+  if (!plantId) {
+    return res.status(400).json({ error: 'Invalid plant id' });
+  }
+
+  try {
+    const [rows] = await pool.query(
+      `SELECT
+        plant_id,
+        name,
+        crop_category,
+        quantity,
+        price,
+        seeding_date,
+        harvest_date,
+        growth_duration_weeks,
+        image_url
+      FROM plant_inventory
+      WHERE plant_id = ? AND seller_id = ?`,
+      [plantId, req.user.id]
+    );
+
+    if (!rows.length) {
+      return res.status(404).json({ error: 'Plant not found' });
+    }
+
+    res.json({ plant: rows[0] });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to fetch plant' });
+  }
+});
+
 // Delete a plant from inventory
 app.delete('/api/plants/:id', authenticate, async (req, res) => {
   if (req.user.role !== 'Admin') {
@@ -328,6 +364,96 @@ app.delete('/api/plants/:id', authenticate, async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to delete plant' });
+  }
+});
+
+// Update plant details (name, category, dates, quantity, image)
+app.put('/api/plants/:id', authenticate, upload.single('image'), async (req, res) => {
+  if (req.user.role !== 'Admin') {
+    return res.status(403).json({ error: 'Admin only' });
+  }
+
+  const plantId = Number(req.params.id);
+
+  if (!plantId) {
+    return res.status(400).json({ error: 'Invalid plant id' });
+  }
+
+  const {
+    name,
+    crop_category,
+    growth_duration_weeks,
+    seeding_date,
+    harvest_date,
+    quantity
+  } = req.body;
+
+  if (!name || !crop_category || !seeding_date || !quantity) {
+    return res.status(400).json({ error: 'Missing fields' });
+  }
+
+  try {
+    const [rows] = await pool.query(
+      `SELECT image_url FROM plant_inventory WHERE plant_id = ? AND seller_id = ?`,
+      [plantId, req.user.id]
+    );
+
+    if (!rows.length) {
+      return res.status(404).json({ error: 'Plant not found' });
+    }
+
+    const current = rows[0];
+    const newImageUrl = req.file
+      ? `/uploads/${req.file.filename}`
+      : current.image_url;
+
+    const durationWeeks = growth_duration_weeks
+      ? parseInt(String(growth_duration_weeks).replace(/\D/g, ''), 10) || null
+      : null;
+
+    await pool.query(
+      `UPDATE plant_inventory
+       SET name = ?,
+           crop_category = ?,
+           growth_duration_weeks = ?,
+           seeding_date = ?,
+           harvest_date = ?,
+           quantity = ?,
+           image_url = ?
+       WHERE plant_id = ? AND seller_id = ?`,
+      [
+        name,
+        crop_category,
+        durationWeeks,
+        seeding_date,
+        harvest_date || null,
+        Number(quantity),
+        newImageUrl,
+        plantId,
+        req.user.id
+      ]
+    );
+
+    const [updatedRows] = await pool.query(
+      `SELECT
+        plant_id,
+        name,
+        crop_category,
+        quantity,
+        price,
+        seeding_date,
+        harvest_date,
+        growth_duration_weeks,
+        image_url
+      FROM plant_inventory
+      WHERE plant_id = ? AND seller_id = ?`,
+      [plantId, req.user.id]
+    );
+
+    res.json({ success: true, plant: updatedRows[0] });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to update plant' });
   }
 });
 
@@ -383,10 +509,11 @@ app.get('/api/store/items', authenticate, async (req, res) => {
       `SELECT
         plant_id,
         name,
+        quantity,
         price,
         image_url
       FROM plant_inventory
-      WHERE quantity > 0 AND price > 0`
+      WHERE quantity >= 0 AND price > 0`
     );
 
     res.json({ items });

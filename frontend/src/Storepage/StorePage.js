@@ -8,6 +8,7 @@ const StorePage = ({ onLogout, user, cartItems, setCartItems }) => {
   const [cartCount, setCartCount] = useState(cartItems.length);
   const [searchTerm, setSearchTerm] = useState('');
   const [products, setProducts] = useState([]);
+  const [quantities, setQuantities] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [toast, setToast] = useState(null);
@@ -37,6 +38,7 @@ const StorePage = ({ onLogout, user, cartItems, setCartItems }) => {
           const mapped = (data.items || []).map(item => ({
             id: item.plant_id,
             name: item.name,
+            stock: item.quantity,
             price: Number(item.price) || 0,
             img: buildImageUrl(item.image_url),
           }));
@@ -54,9 +56,24 @@ const StorePage = ({ onLogout, user, cartItems, setCartItems }) => {
     fetchProducts();
   }, []);
 
+  const changeQuantity = (productId, stock, delta) => {
+    const max = Number.isFinite(Number(stock)) ? Number(stock) : Infinity;
+    setQuantities(prev => {
+      const current = prev[productId] || 1;
+      const clampedCurrent = Math.min(max, Math.max(1, current));
+      const next = Math.min(max, Math.max(1, clampedCurrent + delta));
+      return { ...prev, [productId]: next };
+    });
+  };
+
   const handleAddToCart = (product) => {
-    setCartItems(prev => [...prev, product]);
-    setToast(`${product.name.toUpperCase()} added to cart`);
+    const max = Number.isFinite(Number(product.stock)) ? Number(product.stock) : Infinity;
+    if (max <= 0) return; // Sold out, do nothing
+    const selected = quantities[product.id] || 1;
+    const qty = Math.min(max, Math.max(1, selected));
+    const itemToAdd = { ...product, quantity: qty };
+    setCartItems(prev => [...prev, itemToAdd]);
+    setToast(`${product.name.toUpperCase()} x${qty} added to cart`);
     setTimeout(() => setToast(null), 2000);
   };
 
@@ -75,7 +92,7 @@ const StorePage = ({ onLogout, user, cartItems, setCartItems }) => {
       <header className="store-navbar">
         <div className="store-logo">Cropflow</div>
 
-        <div className="store-search-bar-container">
+        {/* <div className="store-search-bar-container">
           <MdSearch className="store-search-icon" />
           <input
             type="text"
@@ -83,7 +100,7 @@ const StorePage = ({ onLogout, user, cartItems, setCartItems }) => {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
-        </div>
+        </div> */}
 
         <div className="store-right-controls">
           <Link to="/settings" className="store-nav-link" title="Settings">
@@ -121,27 +138,59 @@ const StorePage = ({ onLogout, user, cartItems, setCartItems }) => {
           ) : (
             <div className="store-product-grid">
               {filteredProducts.length > 0 ? (
-              filteredProducts.map((product) => (
-                <div key={product.id} className="store-product-card">
+              filteredProducts.map((product) => {
+                const stock = Number.isFinite(Number(product.stock)) ? Number(product.stock) : 0;
+                const isSoldOut = stock <= 0;
+                const qty = quantities[product.id] || 1;
+                return (
+                  <div key={product.id} className={`store-product-card${isSoldOut ? ' sold-out' : ''}`}>
 
-                  <div className="store-card-image-wrapper">
-                    <img src={product.img} alt={product.name} loading="lazy" />
+                    <div className="store-card-image-wrapper">
+                      <img src={product.img} alt={product.name} loading="lazy" />
+                      {!isSoldOut && (
+                        <div className="store-quantity-controls">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              changeQuantity(product.id, product.stock, -1);
+                            }}
+                          >
+                            -
+                          </button>
+                          <span>{qty}</span>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              changeQuantity(product.id, product.stock, 1);
+                            }}
+                          >
+                            +
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="store-card-details">
+                      {isSoldOut && (
+                        <p className="store-sold-out-label">Sold Out</p>
+                      )}
+                      <h4>{product.name.toUpperCase()}</h4>
+                      <p className="store-price">${product.price.toFixed(2)}</p>
+
+                      <button
+                        onClick={() => handleAddToCart(product)}
+                        disabled={isSoldOut}
+                        className={`store-add-btn${isSoldOut ? ' disabled' : ''}`}
+                      >
+                        {isSoldOut ? 'Sold Out' : 'Add'}
+                      </button>
+                    </div>
+
                   </div>
-
-                  <div className="store-card-details">
-                    <h4>{product.name.toUpperCase()}</h4> {/* Uppercase for minimal bold */}
-                    <p className="store-price">${product.price.toFixed(2)}</p>
-
-                    <button
-                      onClick={() => handleAddToCart(product)}
-                      className="store-add-btn"
-                    >
-                      Add
-                    </button>
-                  </div>
-
-                </div>
-              ))
+                );
+              })
               ) : (
                 <div className="store-no-results">
                   <p>No Items Found</p>
