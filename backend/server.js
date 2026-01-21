@@ -280,8 +280,18 @@ app.post('/api/plants/add', authenticate, upload.single('image'), async (req, re
 
 app.get('/api/plants', authenticate, async (req, res) => {
   try {
-    const [plants] = await pool.query(
-      `SELECT
+    // First, check if columns exist by querying the table structure
+    const [columns] = await pool.query(
+      `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
+       WHERE TABLE_SCHEMA = DATABASE() 
+       AND TABLE_NAME = 'plant_inventory' 
+       AND COLUMN_NAME IN ('growth_stage', 'health_status', 'notes')`
+    );
+    
+    const hasNewColumns = columns.length > 0;
+    
+    // Build query based on available columns
+    let query = `SELECT
         plant_id as id,
         name,
         crop_category,
@@ -289,18 +299,23 @@ app.get('/api/plants', authenticate, async (req, res) => {
         price,
         seeding_date,
         harvest_date,
-        image_url,
-        growth_stage,
-        health_status,
-        notes
-      FROM plant_inventory
-      WHERE seller_id = ?`,
-      [req.user.id]
-    );
+        image_url`;
+    
+    if (hasNewColumns) {
+      const columnNames = columns.map(c => c.COLUMN_NAME);
+      if (columnNames.includes('growth_stage')) query += `,\n        growth_stage`;
+      if (columnNames.includes('health_status')) query += `,\n        health_status`;
+      if (columnNames.includes('notes')) query += `,\n        notes`;
+    }
+    
+    query += `\n      FROM plant_inventory
+      WHERE seller_id = ?`;
+
+    const [plants] = await pool.query(query, [req.user.id]);
 
     res.json({ plants });
   } catch (err) {
-    console.error(err);
+    console.error('Error fetching plants:', err);
     res.status(500).json({ error: 'Failed to fetch plants' });
   }
 });
