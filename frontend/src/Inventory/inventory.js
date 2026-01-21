@@ -124,7 +124,7 @@ const Inventory = () => {
       }
 
       setPlants(prev => prev.map(p =>
-        p.plant_id === plant.plant_id ? { ...p, price: 0 } : p
+        p.id === plant.id ? { ...p, price: 0 } : p
       ));
     } catch {
       setError('Network error');
@@ -154,7 +154,7 @@ const Inventory = () => {
         return;
       }
 
-      setPlants(prev => prev.filter(p => p.plant_id !== plantId));
+      setPlants(prev => prev.filter(p => p.id !== plantId));
     } catch {
       setError('Network error');
     }
@@ -178,7 +178,7 @@ const Inventory = () => {
     }
 
     try {
-      const res = await fetch(`${API_URL}/api/plants/${plant.plant_id}/price`, {
+      const res = await fetch(`${API_URL}/api/plants/${plant.id}/price`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -194,7 +194,7 @@ const Inventory = () => {
       }
 
       setPlants(prev => prev.map(p =>
-        p.plant_id === plant.plant_id ? { ...p, price } : p
+        p.id === plant.id ? { ...p, price } : p
       ));
     } catch {
       setError('Network error');
@@ -274,7 +274,7 @@ const Inventory = () => {
           </thead>
           <tbody>
             {filteredPlants.map(p => (
-              <tr key={p.plant_id}>
+              <tr key={p.id}>
                 <td>{p.name}</td>
                 <td>{p.crop_category}</td>
                 <td>{p.quantity}</td>
@@ -304,16 +304,16 @@ const Inventory = () => {
                   <div className="inventory-actions">
                     <button
                       className="inventory-menu-trigger"
-                      onClick={() => toggleMenu(p.plant_id)}
+                      onClick={() => toggleMenu(p.id)}
                     >
                         <FiMoreVertical />
                     </button>
-                    {openMenuId === p.plant_id && (
+                    {openMenuId === p.id && (
                       <div className="inventory-menu">
                         <button
                           className="inventory-btn inventory-btn-primary"
                           onClick={() => {
-                            toggleMenu(p.plant_id);
+                            toggleMenu(p.id);
                             handleListForSale(p);
                           }}
                         >
@@ -323,7 +323,7 @@ const Inventory = () => {
                           // <button
                           //   className="inventory-btn"
                           //   onClick={() => {
-                          //     toggleMenu(p.plant_id);
+                          //     toggleMenu(p.id);
                           //     handleUnlistFromStore(p);
                           //   }}
                           // >
@@ -333,8 +333,8 @@ const Inventory = () => {
                         <button
                           className="inventory-btn"
                           onClick={() => {
-                            toggleMenu(p.plant_id);
-                            navigate(`edit/${p.plant_id}`);
+                            toggleMenu(p.id);
+                            navigate(`edit/${p.id}`);
                           }}
                         >
                           Modify
