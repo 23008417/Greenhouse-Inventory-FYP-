@@ -10,6 +10,7 @@ import AddGrowingSystem from './GrowingSystems/AddGrowingSystem';
 import AddSystemType from './GrowingSystems/AddSystemType';
 import AddSystemTypeForm from './GrowingSystems/AddSystemTypeForm';
 import Customers from './Customers/Customers';
+import CropManagement from './CropManagement/CropManagement';
 import './DashboardLayout.css';
 
 const DashboardLayout = () => {
@@ -46,7 +47,7 @@ const DashboardLayout = () => {
           <Route path="customers" element={<Customers />} />
           <Route path="reports" element={<div style={{padding: '2rem'}}>Reports - Coming Soon</div>} />
           <Route path="event" element={<div style={{padding: '2rem'}}> Event - Coming Soon</div>} />
-          <Route path="cropmgmt" element={<div style={{padding: '2rem'}}> Crop Management - Coming Soon</div>} />
+          <Route path="cropmgmt" element={<CropManagement />} />
 
           {/* Fallback */}
           <Route path="*" element={<Navigate to="." />} />

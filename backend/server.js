@@ -282,14 +282,17 @@ app.get('/api/plants', authenticate, async (req, res) => {
   try {
     const [plants] = await pool.query(
       `SELECT
-        plant_id,
+        plant_id as id,
         name,
         crop_category,
         quantity,
         price,
         seeding_date,
         harvest_date,
-        image_url
+        image_url,
+        growth_stage,
+        health_status,
+        notes
       FROM plant_inventory
       WHERE seller_id = ?`,
       [req.user.id]
@@ -328,6 +331,70 @@ app.delete('/api/plants/:id', authenticate, async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to delete plant' });
+  }
+});
+
+// Update crop growth stage
+app.put('/api/plants/:id/stage', authenticate, async (req, res) => {
+  if (req.user.role !== 'Admin') {
+    return res.status(403).json({ error: 'Admin only' });
+  }
+
+  const plantId = Number(req.params.id);
+  const { growth_stage } = req.body;
+
+  const validStages = ['seeding', 'germination', 'vegetative', 'flowering', 'harvest-ready', 'harvested'];
+  
+  if (!validStages.includes(growth_stage)) {
+    return res.status(400).json({ error: 'Invalid growth stage' });
+  }
+
+  try {
+    const [result] = await pool.query(
+      'UPDATE plant_inventory SET growth_stage = ? WHERE plant_id = ? AND seller_id = ?',
+      [growth_stage, plantId, req.user.id]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Plant not found' });
+    }
+
+    res.json({ success: true, growth_stage });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to update growth stage' });
+  }
+});
+
+// Update crop health status
+app.put('/api/plants/:id/health', authenticate, async (req, res) => {
+  if (req.user.role !== 'Admin') {
+    return res.status(403).json({ error: 'Admin only' });
+  }
+
+  const plantId = Number(req.params.id);
+  const { health_status } = req.body;
+
+  const validStatuses = ['healthy', 'attention', 'diseased'];
+  
+  if (!validStatuses.includes(health_status)) {
+    return res.status(400).json({ error: 'Invalid health status' });
+  }
+
+  try {
+    const [result] = await pool.query(
+      'UPDATE plant_inventory SET health_status = ? WHERE plant_id = ? AND seller_id = ?',
+      [health_status, plantId, req.user.id]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Plant not found' });
+    }
+
+    res.json({ success: true, health_status });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to update health status' });
   }
 });
 
