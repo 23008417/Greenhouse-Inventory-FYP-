@@ -1,14 +1,14 @@
 .store-page {
-  font-family: 'Helvetica Neue', Arial, sans-serif; /* Bold sans-serif like Yeezy */
-  background-color: #f8f8f8; /* Beige/off-white bg for raw, minimalist feel */
+  font-family: 'Helvetica Neue', Arial, sans-serif; 
+  background-color: white;
   color: #000; /* Black text */
   min-height: 100vh;
   margin: 0;
   padding: 0;
   display: flex;
   flex-direction: column;
-  text-transform: uppercase; /* Yeezy-style uppercase text */
-  letter-spacing: 1px; /* Slight spacing for premium feel */
+  text-transform: uppercase; 
+  letter-spacing: 1px; 
 }
 
 .store-toast {
@@ -32,7 +32,7 @@
   top: 0;
   left: 0;
   right: 0;
-  background-color: #f8f8f8; /* Match bg for seamless */
+  background-color: white; /* Match bg for seamless */
   border-bottom: 1px solid #ccc; /* Subtle divider */
   padding: 10px 20px;
   display: flex;
@@ -51,7 +51,7 @@
 
 .store-logo::before {
   content: '';
-  background: url('/public/cropflow.png') no-repeat center/cover;
+  background: url('/public/cropflowinvert.png') no-repeat center/cover;
   width: 24px;
   height: 24px;
   margin-right: 8px;

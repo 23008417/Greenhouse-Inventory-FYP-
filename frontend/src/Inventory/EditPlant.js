@@ -157,7 +157,7 @@ const EditPlant = () => {
   return (
     <div className="add-plant-page">
       <div className="add-plant-header">
-        <h1>Edit Plant</h1>
+        <h1>Edit</h1>
       </div>
 
       {error && <div className="error-message">{error}</div>}
