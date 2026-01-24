@@ -98,8 +98,14 @@ const Dashboard = () => {
       });
   }, [timeRange]); // <--- IMPORTANT: Re-runs fetch whenever 'timeRange' changes
 
-  if (loading) return <main className="dashboard-main"><div style={{padding: '2rem'}}>Loading real-time data...</div></main>;
-  
+  if (loading) return (
+      <main className="dashboard-main">
+        <div className="loading-container">
+          <div className="spinner"></div>
+          <p>Loading real-time data...</p>
+        </div>
+      </main>
+  );  
   if (error) return (
     <main className="dashboard-main">
       <div style={{ color: 'red', padding: '2rem' }}>
