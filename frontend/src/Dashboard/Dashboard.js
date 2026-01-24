@@ -182,8 +182,7 @@ const Dashboard = () => {
             <div><span className="chart-label">Revenue</span><strong>${Number(data.stats.revenue).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong></div>
           </div>
           
-          <div style={{ width: '100%', height: 200 }}>
-            <ResponsiveContainer>
+          <div style={{ width: '100%', height: 200 }}>            <ResponsiveContainer>
               {data.revenueTrend && data.revenueTrend.length > 0 ? (
                 <LineChart data={data.revenueTrend} margin={{ top: 20, right: 10, left: 0, bottom: 0 }}>
                   <XAxis 
@@ -193,7 +192,17 @@ const Dashboard = () => {
                     tickLine={false} 
                     tickFormatter={(str) => new Date(str).toLocaleDateString(undefined, {month:'short', day:'numeric'})}
                   />
-                  <Tooltip />
+                  {/* --- NEW: Adds the vertical numbers with $ --- */}
+                  <YAxis 
+                    tickFormatter={(value) => `$${value}`} 
+                    fontSize={10} 
+                    axisLine={false} 
+                    tickLine={false} 
+                    width={40}
+                  />
+
+                  {/* --- UPDATED: Adds $ to the hover box --- */}
+                  <Tooltip formatter={(value) => [`$${value}`, 'Revenue']} />
                   <Line type="monotone" dataKey="daily_revenue" stroke="#82ca9d" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} />
                 </LineChart>
               ) : <div style={{padding:'20px', color:'#999'}}>No sales history yet</div>}
