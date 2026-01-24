@@ -1,0 +1,148 @@
+.events-container {
+  padding: 2rem;
+  /* Massive padding at bottom to force content up */
+  padding-bottom: 10rem; 
+  background-color: #f9fafb;
+  
+  /* FIX: Subtract header height (approx 80px) from full height */
+  min-height: calc(100vh - 100px); 
+  
+  /* Ensure this container handles the scroll if the layout doesn't */
+  overflow-y: auto; 
+}
+
+.events-header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.events-header h1 {
+  font-size: 2.5rem;
+  color: #064e3b; /* Dark Green */
+  margin-bottom: 0.5rem;
+}
+
+.events-header p {
+  color: #6b7280;
+  font-size: 1.1rem;
+}
+
+/* Grid Layout */
+.events-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Event Card */
+.event-card {
+  background: white;
+  border-radius: 15px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s, box-shadow 0.2s;
+  display: flex;
+  flex-direction: column;
+}
+
+.event-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+}
+
+.event-image {
+  height: 180px;
+  background-color: #e5e7eb;
+  position: relative;
+}
+
+.event-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Date Badge */
+.date-badge {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: white;
+  padding: 8px 15px;
+  border-radius: 10px;
+  text-align: center;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  min-width: 60px;
+}
+
+.date-month {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #ef4444; /* Red accent */
+  text-transform: uppercase;
+}
+
+.date-day {
+  display: block;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #111827;
+  line-height: 1;
+}
+
+/* Content */
+.event-content {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+.event-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 0.5rem;
+}
+
+.event-desc {
+  color: #6b7280;
+  font-size: 0.9rem;
+  margin-bottom: 1.5rem;
+  line-height: 1.5;
+}
+
+.event-details {
+  margin-top: auto; /* Pushes to bottom */
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  color: #4b5563;
+  font-size: 0.9rem;
+  margin-bottom: 1.5rem;
+}
+
+.detail-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.register-btn {
+  width: 100%;
+  padding: 0.75rem;
+  background-color: #059669;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.register-btn:hover {
+  background-color: #047857;
+}

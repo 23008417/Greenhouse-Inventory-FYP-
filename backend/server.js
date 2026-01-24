@@ -471,6 +471,54 @@ app.post('/api/paypal/capture', authenticate, async (req, res) => {
     res.status(500).json({ error: 'Failed to process order' });
   }
 });
+
+/* =====================
+   ANNOUNCEMENTS (Events)
+===================== */
+
+// 1. Get all announcements
+app.get('/api/announcements', authenticate, async (req, res) => {
+  try {
+    const [events] = await pool.query('SELECT * FROM announcements ORDER BY event_date ASC');
+    res.json(events);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to fetch events' });
+  }
+});
+
+// 2. Create a new announcement
+app.post('/api/announcements', authenticate, async (req, res) => {
+  if (req.user.role !== 'Admin') return res.status(403).json({ error: 'Admin only' });
+
+  const { title, description, event_date, start_time, location, category } = req.body;
+  if (!title || !event_date) return res.status(400).json({ error: 'Title and Date required' });
+
+  try {
+    await pool.query(
+      `INSERT INTO announcements (title, description, event_date, start_time, location, category)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [title, description, event_date, start_time, location, category]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to create event' });
+  }
+});
+
+// 3. Delete an announcement
+app.delete('/api/announcements/:id', authenticate, async (req, res) => {
+  if (req.user.role !== 'Admin') return res.status(403).json({ error: 'Admin only' });
+
+  try {
+    await pool.query('DELETE FROM announcements WHERE id = ?', [req.params.id]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to delete event' });
+  }
+});
 /* =====================
    STATIC FILES
 ===================== */
