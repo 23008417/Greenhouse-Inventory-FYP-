@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import mqtt from 'mqtt'; // <--- NEW IMPORT
 import { 
   FiFilter, FiChevronDown, FiArrowUp, FiArrowDown,
@@ -12,6 +13,7 @@ import './Dashboard.css';
 import { API_URL } from '../apiConfig';
 
 const Dashboard = () => {
+  const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -353,9 +355,17 @@ const Dashboard = () => {
           <div className="alert-list">
             {data.alerts.length === 0 ? <div className="alert-item"><span>Inventory levels are good!</span></div> : null}
             {data.alerts.map((item, index) => (
-              <div key={index} className="alert-item">
+              <div 
+                key={index} 
+                className="alert-item" 
+                onClick={() => navigate('/dashboard/plants/inventory')}
+                style={{cursor: 'pointer'}}
+                title="Click to manage inventory"
+              >
                 <FiAlertTriangle className="icon red" />
-                <span><b>{item.name}</b> is {item.quantity === 0 ? "Out of Stock" : `running low (${item.quantity} left)`}</span>
+                <span>
+                    <b>{item.name}</b> is {item.quantity === 0 ? "Out of Stock" : `running low (${item.quantity} left)`}
+                </span>
                 <FiChevronRight className="arrow" />
               </div>
             ))}
