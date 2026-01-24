@@ -318,7 +318,12 @@ const Dashboard = () => {
           <div className="card-header">
             <h4>Recent Orders <FiClock /></h4>
             <div className="card-actions">
-              <button>View all</button>
+             <button 
+                className="view-all-btn" 
+                onClick={() => navigate('/dashboard/customers')}
+              >
+                View all
+              </button>
             </div>
           </div>
           <div className="capacity-list">
