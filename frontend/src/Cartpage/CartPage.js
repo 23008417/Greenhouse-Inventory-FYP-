@@ -13,7 +13,7 @@ const CartPage = ({ cartItems, setCartItems, user }) => {
   };
 
   const totalPrice = cartItems.reduce(
-    (sum, item) => sum + Number(item.price || 0),
+    (sum, item) => sum + Number(item.price || 0) * (item.quantity || 1),
     0
   );
 
@@ -29,7 +29,7 @@ const CartPage = ({ cartItems, setCartItems, user }) => {
           orderID,
           items: cartItems.map(item => ({  // Map to DB fields
             plant_id: item.id,
-            quantity_purchased: 1,  // Assume 1; track qty if added
+            quantity_purchased: item.quantity || 1,
             unit_price_at_sale: item.price
           })),
           total: totalPrice
@@ -74,7 +74,7 @@ const CartPage = ({ cartItems, setCartItems, user }) => {
 
                 <div className="cart-info">
                   <h3>{item.name.toUpperCase()}</h3>
-                  <p className="cart-price">${item.price}</p>
+                  <p className="cart-price">${item.price} x {item.quantity || 1}</p>
                 </div>
 
                 <button
@@ -121,7 +121,7 @@ const CartPage = ({ cartItems, setCartItems, user }) => {
                             currency_code: currency,
                             value: Number(item.price || 0).toFixed(2),
                           },
-                          quantity: '1',
+                          quantity: String(item.quantity || 1),
                         }));
 
                         return actions.order.create({

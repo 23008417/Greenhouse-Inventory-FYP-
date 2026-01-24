@@ -8,12 +8,12 @@ const GlobalHeader = () => {
       <div className="logo-header">
         <h3>Cropflow</h3>
       </div>
-      <div className="search-bar">
+      {/* <div className="search-bar">
         <FiSearch />
         <input type="text" placeholder="Search" />
-      </div>
+      </div> */}
       <div className="header-icons">
-        <FiGrid />
+        {/* <FiGrid /> */}
         <FiBell />
         <div className="profile-badge">
         <img src="/RPLOGO.png" alt="RP Logo" className="profile-logo-img" />
