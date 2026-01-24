@@ -757,11 +757,17 @@ app.get('/api/admin/dashboard', authenticate, async (req, res) => {
       GROUP BY p.plant_id, p.name ORDER BY sales DESC LIMIT 5
     `);
 
-    // 3. Get Revenue History (7 Days)
-    const [revenueRaw] = await pool.query(`
-      SELECT DATE_FORMAT(order_date, '%Y-%m-%d') as date, SUM(total_amount) as daily_revenue
-      FROM orders WHERE order_date >= DATE_SUB(NOW(), INTERVAL 7 DAY) GROUP BY date ORDER BY date ASC
-    `);
+    // 3. Get Revenue History (Dynamic Range)
+        // Check if frontend sent a specific range (e.g. ?range=30), default to 7
+        const days = req.query.range ? Number(req.query.range) : 7;
+
+        const [revenueRaw] = await pool.query(`
+            SELECT DATE_FORMAT(order_date, '%Y-%m-%d') as date, SUM(total_amount) as daily_revenue
+            FROM orders 
+            WHERE order_date >= DATE_SUB(NOW(), INTERVAL ? DAY) 
+            GROUP BY date 
+            ORDER BY date ASC
+        `, [days]); // <--- Pass the variable here
     const revenueTrend = revenueRaw.map(row => ({ date: row.date, daily_revenue: parseFloat(row.daily_revenue) }));
     
     // 4. Get Alerts & Recent Orders

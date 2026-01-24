@@ -16,6 +16,9 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // NEW: State for the filter (Default to 7 days)
+  const [timeRange, setTimeRange] = useState(7);
+
   // --- HIVEMQ LIVE SENSOR LOGIC (TEMP + HUMIDITY) ---
   const [sensorData, setSensorData] = useState([]);
 
@@ -63,11 +66,14 @@ const Dashboard = () => {
     };
   }, []);
 
+  // --- FETCH DASHBOARD DATA (FROM DATABASE) ---
   useEffect(() => {
-    console.log(`Fetching from: ${API_URL}/api/admin/dashboard`);
+    // UPDATED: Now includes ?range=${timeRange}
+    console.log(`Fetching from: ${API_URL}/api/admin/dashboard?range=${timeRange}`);
 
     const token = localStorage.getItem('token');
-    fetch(`${API_URL}/api/admin/dashboard`, {
+    
+    fetch(`${API_URL}/api/admin/dashboard?range=${timeRange}`, {
       headers: token ? { Authorization: `Bearer ${token}` } : {}
     })
       .then(async (res) => {
@@ -90,7 +96,7 @@ const Dashboard = () => {
         setError(err.message);
         setLoading(false);
       });
-  }, []);
+  }, [timeRange]); // <--- IMPORTANT: Re-runs fetch whenever 'timeRange' changes
 
   if (loading) return <main className="dashboard-main"><div style={{padding: '2rem'}}>Loading real-time data...</div></main>;
   
@@ -146,14 +152,36 @@ const Dashboard = () => {
       {/* --- MID ROW (CHARTS & LISTS) --- */}
       <section className="mid-row">
         
-        {/* 1. SALES LINE CHART (Revenue History) */}
+       {/* 1. SALES LINE CHART (Revenue History) */}
         <div className="chart-card">
-          <div className="chart-header">
-            <h4>Sales Performance (7 Days) </h4>
+          {/* Header with Filter Dropdown */}
+          <div className="chart-header" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+            <h4>Sales Performance</h4>
+            
+            <select 
+              value={timeRange} 
+              onChange={(e) => setTimeRange(Number(e.target.value))}
+              style={{
+                padding: '4px 8px', 
+                borderRadius: '6px', 
+                border: '1px solid #d1d5db', 
+                fontSize: '0.85rem',
+                color: '#374151',
+                outline: 'none',
+                cursor: 'pointer',
+                backgroundColor: 'white'
+              }}
+            >
+              <option value={7}>Last 7 Days</option>
+              <option value={30}>Last 30 Days</option>
+              <option value={90}>Last 3 Months</option>
+            </select>
           </div>
+
           <div className="chart-value">
             <div><span className="chart-label">Revenue</span><strong>${Number(data.stats.revenue).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong></div>
           </div>
+          
           <div style={{ width: '100%', height: 200 }}>
             <ResponsiveContainer>
               {data.revenueTrend && data.revenueTrend.length > 0 ? (
