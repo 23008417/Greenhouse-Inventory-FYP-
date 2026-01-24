@@ -48,6 +48,7 @@ const DashboardLayout = () => {
           />
           
           <Route path="customers" element={<Customers />} />
+          <Route path="reports" element={<div style={{padding: '2rem'}}>Reports - Coming Soon</div>} />
 
           <Route path="event" element={<EventsPage />} />
 
