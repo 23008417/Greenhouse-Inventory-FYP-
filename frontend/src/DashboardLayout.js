@@ -12,6 +12,7 @@ import AddSystemType from './GrowingSystems/AddSystemType';
 import AddSystemTypeForm from './GrowingSystems/AddSystemTypeForm';
 import Customers from './Customers/Customers';
 import CropManagement from './CropManagement/CropManagement';
+import AddCrop from './CropManagement/AddCrop';
 import './DashboardLayout.css';
 import EventsPage from './Events/EventsPage';
 
@@ -53,7 +54,8 @@ const DashboardLayout = () => {
           <Route path="event" element={<EventsPage />} />
 
          
-          <Route path="cropmgmt" element={<CropManagement />} />
+          <Route path="crop-management" element={<CropManagement />} />
+          <Route path="crops/add" element={<AddCrop />} />
  
 
           {/* Fallback */}

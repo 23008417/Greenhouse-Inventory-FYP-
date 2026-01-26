@@ -16,18 +16,17 @@ const CropManagement = () => {
 
   const growthStages = [
     { value: 'all', label: 'All Stages', color: '#6c757d' },
-    { value: 'seeding', label: 'Seeding', color: '#ffc107' },
-    { value: 'germination', label: 'Germination', color: '#17a2b8' },
-    { value: 'vegetative', label: 'Vegetative', color: '#28a745' },
-    { value: 'flowering', label: 'Flowering', color: '#e83e8c' },
-    { value: 'harvest-ready', label: 'Harvest Ready', color: '#fd7e14' },
-    { value: 'harvested', label: 'Harvested', color: '#6c757d' }
+    { value: 'Seedling', label: 'Seedling', color: '#ffc107' },
+    { value: 'Vegetative', label: 'Vegetative', color: '#28a745' },
+    { value: 'Flowering', label: 'Flowering', color: '#e83e8c' },
+    { value: 'Fruiting', label: 'Fruiting', color: '#fd7e14' },
+    { value: 'Harvest Ready', label: 'Harvest Ready', color: '#17a2b8' }
   ];
 
   const healthStatus = [
-    { value: 'healthy', label: 'Healthy', icon: FiCheckCircle, color: '#28a745' },
-    { value: 'attention', label: 'Needs Attention', icon: FiAlertCircle, color: '#ffc107' },
-    { value: 'diseased', label: 'Diseased', icon: FiAlertCircle, color: '#dc3545' }
+    { value: 'Healthy', label: 'Healthy', icon: FiCheckCircle, color: '#28a745' },
+    { value: 'Needs Attention', label: 'Needs Attention', icon: FiAlertCircle, color: '#ffc107' },
+    { value: 'Critical', label: 'Critical', icon: FiAlertCircle, color: '#dc3545' }
   ];
 
   useEffect(() => {
@@ -47,17 +46,19 @@ const CropManagement = () => {
     }
 
     try {
-      const res = await fetch(`${API_URL}/api/plants`, {
+      const res = await fetch(`${API_URL}/api/crops`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
 
       if (res.ok) {
-        const enrichedCrops = (data.plants || []).map(plant => ({
-          ...plant,
-          growth_stage: plant.growth_stage || 'vegetative',
-          health_status: plant.health_status || 'healthy',
-          notes: plant.notes || ''
+        const enrichedCrops = (data.crops || []).map(crop => ({
+          ...crop,
+          growth_stage: crop.growth_stage || 'Seedling',
+          health_status: crop.health_status || 'Healthy',
+          batch_code: crop.batch_code || '',
+          location: crop.location || 'Not specified',
+          water_level: crop.water_level || 'Good'
         }));
         setCrops(enrichedCrops);
         setFilteredCrops(enrichedCrops);
@@ -81,7 +82,8 @@ const CropManagement = () => {
     if (searchTerm) {
       result = result.filter(crop =>
         crop.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        crop.crop_category.toLowerCase().includes(searchTerm.toLowerCase())
+        crop.batch_code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        crop.location.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
@@ -128,7 +130,7 @@ const CropManagement = () => {
   const updateCropStage = async (cropId, newStage) => {
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch(`${API_URL}/api/plants/${cropId}/stage`, {
+      const res = await fetch(`${API_URL}/api/crops/${cropId}/stage`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -151,7 +153,7 @@ const CropManagement = () => {
   const updateHealthStatus = async (cropId, newStatus) => {
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch(`${API_URL}/api/plants/${cropId}/health`, {
+      const res = await fetch(`${API_URL}/api/crops/${cropId}/health`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -196,9 +198,9 @@ const CropManagement = () => {
         </div>
         <button 
           className="view-inventory-btn"
-          onClick={() => navigate('/dashboard/plants/inventory')}
+          onClick={() => navigate('/dashboard/crops/add')}
         >
-          View Full Inventory
+          Add New Crop
         </button>
       </div>
 
@@ -218,7 +220,7 @@ const CropManagement = () => {
             <FiCalendar color="#ff9800" size={24} />
           </div>
           <div className="stat-content">
-            <h3>{crops.filter(c => c.growth_stage === 'harvest-ready').length}</h3>
+            <h3>{crops.filter(c => c.growth_stage === 'Harvest Ready').length}</h3>
             <p>Ready to Harvest</p>
           </div>
         </div>
@@ -227,7 +229,7 @@ const CropManagement = () => {
             <FiCheckCircle color="#4caf50" size={24} />
           </div>
           <div className="stat-content">
-            <h3>{crops.filter(c => c.health_status === 'healthy').length}</h3>
+            <h3>{crops.filter(c => c.health_status === 'Healthy').length}</h3>
             <p>Healthy Crops</p>
           </div>
         </div>
@@ -236,7 +238,7 @@ const CropManagement = () => {
             <FiAlertCircle color="#ffc107" size={24} />
           </div>
           <div className="stat-content">
-            <h3>{crops.filter(c => c.health_status === 'attention' || c.health_status === 'diseased').length}</h3>
+            <h3>{crops.filter(c => c.health_status === 'Needs Attention' || c.health_status === 'Critical').length}</h3>
             <p>Need Attention</p>
           </div>
         </div>
@@ -273,7 +275,7 @@ const CropManagement = () => {
         {filteredCrops.length === 0 ? (
           <div className="no-crops">
             <p>No crops found matching your criteria</p>
-            <button onClick={() => navigate('/dashboard/plants/inventory/addplant')}>
+            <button onClick={() => navigate('/dashboard/crops/add')}>
               Add New Crop
             </button>
           </div>
@@ -288,7 +290,7 @@ const CropManagement = () => {
                 <div className="crop-card-header">
                   <div>
                     <h3>{crop.name}</h3>
-                    <span className="crop-category">{crop.crop_category}</span>
+                    <span className="crop-category">Batch: {crop.batch_code}</span>
                   </div>
                   <HealthIcon 
                     size={24} 
@@ -302,11 +304,15 @@ const CropManagement = () => {
 
                 <div className="crop-info">
                   <div className="info-row">
-                    <span>Quantity:</span>
-                    <strong>{crop.quantity} units</strong>
+                    <span>Location:</span>
+                    <strong>{crop.location}</strong>
                   </div>
                   <div className="info-row">
-                    <span>Seeding Date:</span>
+                    <span>Water Level:</span>
+                    <strong>{crop.water_level}</strong>
+                  </div>
+                  <div className="info-row">
+                    <span>Planted Date:</span>
                     <strong>{crop.seeding_date ? new Date(crop.seeding_date).toLocaleDateString() : 'N/A'}</strong>
                   </div>
                   {crop.harvest_date && (

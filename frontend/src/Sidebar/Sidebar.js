@@ -92,7 +92,7 @@ const Sidebar = () => {
         <NavItem to="/dashboard/event" icon={<FiShoppingBag />}>
           Event
         </NavItem>
-         <NavItem to="/dashboard/cropmgmt" icon={<FiPackage />}>
+         <NavItem to="/dashboard/crop-management" icon={<FiPackage />}>
           Crop Management
         </NavItem>
       </ul>

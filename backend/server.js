@@ -605,6 +605,352 @@ app.get('/api/store/items', authenticate, async (req, res) => {
   }
 });
 
+/* =====================
+   CROP MANAGEMENT (Separate from Inventory)
+===================== */
+
+// Get all crops for crop management
+app.get('/api/crops', authenticate, async (req, res) => {
+  if (req.user.role !== 'Admin') {
+    return res.status(403).json({ error: 'Admin only' });
+  }
+
+  try {
+    const [crops] = await pool.query(
+      `SELECT 
+        batch_id as id,
+        batch_code,
+        plant_name as name,
+        location,
+        stage as growth_stage,
+        health_status,
+        water_level,
+        planted_date as seeding_date,
+        expected_harvest_date as harvest_date,
+        created_at
+      FROM crop_management
+      ORDER BY created_at DESC`
+    );
+
+    res.json({ crops });
+  } catch (err) {
+    console.error('Error fetching crops:', err);
+    res.status(500).json({ error: 'Failed to fetch crops' });
+  }
+});
+
+// Add new crop to crop management
+app.post('/api/crops/add', authenticate, async (req, res) => {
+  if (req.user.role !== 'Admin') {
+    return res.status(403).json({ error: 'Admin only' });
+  }
+
+  const {
+    batch_code,
+    plant_name,
+    location,
+    stage,
+    health_status,
+    water_level,
+    planted_date,
+    expected_harvest_date
+  } = req.body;
+
+  if (!batch_code || !plant_name) {
+    return res.status(400).json({ error: 'Batch code and plant name required' });
+  }
+
+  try {
+    const [result] = await pool.query(
+      `INSERT INTO crop_management
+        (batch_code, plant_name, location, stage, health_status, water_level,
+         planted_date, expected_harvest_date)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        batch_code,
+        plant_name,
+        location || null,
+        stage || 'Seedling',
+        health_status || 'Healthy',
+        water_level || 'Good',
+        planted_date || null,
+        expected_harvest_date || null
+      ]
+    );
+
+    res.json({ 
+      success: true, 
+      batch_id: result.insertId,
+      message: 'Crop batch added successfully' 
+    });
+  } catch (err) {
+    console.error('Error adding crop:', err);
+    if (err.code === 'ER_DUP_ENTRY') {
+      res.status(400).json({ error: 'Batch code already exists' });
+    } else {
+      res.status(500).json({ error: 'Failed to add crop' });
+    }
+  }
+});
+
+// Get single crop details
+app.get('/api/crops/:id', authenticate, async (req, res) => {
+  if (req.user.role !== 'Admin') {
+    return res.status(403).json({ error: 'Admin only' });
+  }
+
+  const batchId = Number(req.params.id);
+
+  try {
+    const [rows] = await pool.query(
+      `SELECT 
+        batch_id as id,
+        batch_code,
+        plant_name as name,
+        location,
+        stage as growth_stage,
+        health_status,
+        water_level,
+        planted_date as seeding_date,
+        expected_harvest_date as harvest_date,
+        created_at
+      FROM crop_management
+      WHERE batch_id = ?`,
+      [batchId]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Crop batch not found' });
+    }
+
+    res.json({ crop: rows[0] });
+  } catch (err) {
+    console.error('Error fetching crop:', err);
+    res.status(500).json({ error: 'Failed to fetch crop' });
+  }
+});
+
+// Update crop details
+app.put('/api/crops/:id', authenticate, async (req, res) => {
+  if (req.user.role !== 'Admin') {
+    return res.status(403).json({ error: 'Admin only' });
+  }
+
+  const batchId = Number(req.params.id);
+  const {
+    batch_code,
+    plant_name,
+    location,
+    stage,
+    health_status,
+    water_level,
+    planted_date,
+    expected_harvest_date
+  } = req.body;
+
+  try {
+    const updateFields = [];
+    const updateValues = [];
+
+    if (batch_code) {
+      updateFields.push('batch_code = ?');
+      updateValues.push(batch_code);
+    }
+    if (plant_name) {
+      updateFields.push('plant_name = ?');
+      updateValues.push(plant_name);
+    }
+    if (location !== undefined) {
+      updateFields.push('location = ?');
+      updateValues.push(location || null);
+    }
+    if (stage) {
+      updateFields.push('stage = ?');
+      updateValues.push(stage);
+    }
+    if (health_status) {
+      updateFields.push('health_status = ?');
+      updateValues.push(health_status);
+    }
+    if (water_level) {
+      updateFields.push('water_level = ?');
+      updateValues.push(water_level);
+    }
+    if (planted_date !== undefined) {
+      updateFields.push('planted_date = ?');
+      updateValues.push(planted_date || null);
+    }
+    if (expected_harvest_date !== undefined) {
+      updateFields.push('expected_harvest_date = ?');
+      updateValues.push(expected_harvest_date || null);
+    }
+
+    if (updateFields.length === 0) {
+      return res.status(400).json({ error: 'No fields to update' });
+    }
+
+    updateValues.push(batchId);
+
+    const [result] = await pool.query(
+      `UPDATE crop_management
+       SET ${updateFields.join(', ')}
+       WHERE batch_id = ?`,
+      updateValues
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Crop batch not found' });
+    }
+
+    // Fetch updated crop
+    const [[updatedCrop]] = await pool.query(
+      `SELECT 
+        batch_id as id,
+        batch_code,
+        plant_name as name,
+        location,
+        stage as growth_stage,
+        health_status,
+        water_level,
+        planted_date as seeding_date,
+        expected_harvest_date as harvest_date
+      FROM crop_management
+      WHERE batch_id = ?`,
+      [batchId]
+    );
+
+    res.json({ success: true, crop: updatedCrop });
+  } catch (err) {
+    console.error('Error updating crop:', err);
+    if (err.code === 'ER_DUP_ENTRY') {
+      res.status(400).json({ error: 'Batch code already exists' });
+    } else {
+      res.status(500).json({ error: 'Failed to update crop' });
+    }
+  }
+});
+
+// Delete crop
+app.delete('/api/crops/:id', authenticate, async (req, res) => {
+  if (req.user.role !== 'Admin') {
+    return res.status(403).json({ error: 'Admin only' });
+  }
+
+  const batchId = Number(req.params.id);
+
+  try {
+    const [result] = await pool.query(
+      'DELETE FROM crop_management WHERE batch_id = ?',
+      [batchId]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Crop batch not found' });
+    }
+
+    res.json({ success: true, message: 'Crop batch deleted successfully' });
+  } catch (err) {
+    console.error('Error deleting crop:', err);
+    res.status(500).json({ error: 'Failed to delete crop' });
+  }
+});
+
+// Update crop growth stage
+app.put('/api/crops/:id/stage', authenticate, async (req, res) => {
+  if (req.user.role !== 'Admin') {
+    return res.status(403).json({ error: 'Admin only' });
+  }
+
+  const batchId = Number(req.params.id);
+  const { growth_stage } = req.body;
+
+  const validStages = ['Seedling', 'Vegetative', 'Flowering', 'Fruiting', 'Harvest Ready'];
+  
+  if (!validStages.includes(growth_stage)) {
+    return res.status(400).json({ error: 'Invalid growth stage' });
+  }
+
+  try {
+    const [result] = await pool.query(
+      'UPDATE crop_management SET stage = ? WHERE batch_id = ?',
+      [growth_stage, batchId]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Crop batch not found' });
+    }
+
+    res.json({ success: true, growth_stage });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to update growth stage' });
+  }
+});
+
+// Update crop health status
+app.put('/api/crops/:id/health', authenticate, async (req, res) => {
+  if (req.user.role !== 'Admin') {
+    return res.status(403).json({ error: 'Admin only' });
+  }
+
+  const batchId = Number(req.params.id);
+  const { health_status } = req.body;
+
+  const validStatuses = ['Healthy', 'Needs Attention', 'Critical'];
+  
+  if (!validStatuses.includes(health_status)) {
+    return res.status(400).json({ error: 'Invalid health status' });
+  }
+
+  try {
+    const [result] = await pool.query(
+      'UPDATE crop_management SET health_status = ? WHERE batch_id = ?',
+      [health_status, batchId]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Crop batch not found' });
+    }
+
+    res.json({ success: true, health_status });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to update health status' });
+  }
+});
+
+// Update crop water level
+app.put('/api/crops/:id/water', authenticate, async (req, res) => {
+  if (req.user.role !== 'Admin') {
+    return res.status(403).json({ error: 'Admin only' });
+  }
+
+  const batchId = Number(req.params.id);
+  const { water_level } = req.body;
+
+  const validLevels = ['Low', 'Good', 'High'];
+  
+  if (!validLevels.includes(water_level)) {
+    return res.status(400).json({ error: 'Invalid water level' });
+  }
+
+  try {
+    const [result] = await pool.query(
+      'UPDATE crop_management SET water_level = ? WHERE batch_id = ?',
+      [water_level, batchId]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Crop batch not found' });
+    }
+
+    res.json({ success: true, water_level });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to update water level' });
+  }
+});
+
 // Verify PayPal order (client already captures)
 app.post('/api/paypal/capture', authenticate, async (req, res) => {
   const client = createPayPalClient();
