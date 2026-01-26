@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiCalendar, FiTrendingUp, FiAlertCircle, FiCheckCircle, FiClock } from 'react-icons/fi';
+import { FiCalendar, FiTrendingUp, FiAlertCircle, FiCheckCircle, FiClock, FiTrash2 } from 'react-icons/fi';
 import './CropManagement.css';
 import { API_URL } from '../apiConfig';
 
@@ -166,6 +166,32 @@ const CropManagement = () => {
         fetchCrops();
       } else {
         alert('Failed to update health status');
+      }
+    } catch {
+      alert('Network error');
+    }
+  };
+
+  const deleteCrop = async (cropId, cropName) => {
+    if (!window.confirm(`Are you sure you want to delete "${cropName}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    const token = localStorage.getItem('token');
+    try {
+      const res = await fetch(`${API_URL}/api/crops/${cropId}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      if (res.ok) {
+        alert('Crop batch deleted successfully');
+        fetchCrops();
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Failed to delete crop batch');
       }
     } catch {
       alert('Network error');
@@ -373,6 +399,13 @@ const CropManagement = () => {
                       </option>
                     ))}
                   </select>
+                  <button 
+                    className="delete-crop-btn"
+                    onClick={() => deleteCrop(crop.id, crop.name)}
+                    title="Delete crop batch"
+                  >
+                    <FiTrash2 size={14} />
+                  </button>
                 </div>
               </div>
             );
