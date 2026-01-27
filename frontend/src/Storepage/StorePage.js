@@ -103,9 +103,9 @@ const StorePage = ({ onLogout, user, cartItems, setCartItems }) => {
         </div> */}
 
         <div className="store-right-controls">
-          <Link to="/settings" className="store-nav-link" title="Settings">
+          {/* <Link to="/settings" className="store-nav-link" title="Settings">
             <MdSettings />
-          </Link>
+          </Link> */}
 
           <Link to="/cartpage" className="store-nav-link" title="Cart">
             <MdShoppingCart /> <span className="cart-count">({cartCount})</span>
