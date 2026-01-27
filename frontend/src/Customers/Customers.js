@@ -140,6 +140,45 @@ const Customers = () => {
     }));
   };
 
+  const handleExport = () => {
+    if (customers.length === 0) {
+      alert('No customers to export');
+      return;
+    }
+
+    // Define CSV headers
+    const headers = ['Customer Name', 'Email', 'Created On', 'Last Order', 'Total Orders', 'Amount Spent'];
+    
+    // Convert customers data to CSV rows
+    const csvRows = customers.map(customer => [
+      customer.name,
+      customer.email,
+      formatDate(customer.created_at),
+      formatDate(customer.last_order_date),
+      customer.total_orders || 0,
+      Number(customer.total_spent || 0).toFixed(2)
+    ]);
+
+    // Combine headers and rows
+    const csvContent = [
+      headers.join(','),
+      ...csvRows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n');
+
+    // Create blob and download
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    
+    link.setAttribute('href', url);
+    link.setAttribute('download', `customers_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   if (loading) {
     return <div className="customers-page">Loading customers...</div>;
   }
@@ -156,7 +195,7 @@ const Customers = () => {
           Customers
         </h1>
         <div className="header-actions">
-          <button className="export-btn">Export</button>
+          <button className="export-btn" onClick={handleExport}>Export</button>
           <button className="add-customer-btn" onClick={() => setShowAddModal(true)}>
             <FiUserPlus /> Add customer
           </button>
