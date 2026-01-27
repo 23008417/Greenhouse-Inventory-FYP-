@@ -136,7 +136,7 @@ app.post('/api/auth/signup', async (req, res) => {
       [email.toLowerCase(), hash, firstName || null, lastName || null]
     );
 
-    // Fire-and-forget welcome email so signup isn't blocked by SMTP issues
+    
     sendWelcomeEmail({
       to: email.toLowerCase(),
       firstName
