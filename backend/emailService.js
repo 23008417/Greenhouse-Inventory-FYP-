@@ -54,7 +54,7 @@ async function sendWelcomeEmail({ to, firstName }) {
 Welcome to Cropflow, ${name}!
 
 Thanks for creating an account with Cropflow.
-You can now browse plants, place orders, and manage your greenhouse inventory.
+You can now browse plants, place orders, enjoy shopping!
 
 Open Cropflow: ${frontendUrl}
 
