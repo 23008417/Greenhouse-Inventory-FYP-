@@ -89,8 +89,8 @@ const EventsPage = () => {
       <div className="events-header">
         <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem'}}>
             <div>
-                <h1>Staff Bulletin Board</h1>
-                <p>Manage  announcements for greenhouse staff.</p>
+                <h1>Event Management</h1>
+                <p>Manage  events for greenhouse staff and customers.</p>
             </div>
             <button 
               className="register-btn" 

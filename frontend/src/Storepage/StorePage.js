@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+//import { Link } from 'react-router-dom';
 import { MdSettings, MdShoppingCart, MdLogout, MdSearch, MdEvent } from 'react-icons/md';
 import './StorePage.css';
 import { API_URL, buildImageUrl } from '../apiConfig';
+import { Link, useNavigate } from 'react-router-dom'; // Add useNavigate if missing
 
 const StorePage = ({ onLogout, user, cartItems, setCartItems }) => {
   const [cartCount, setCartCount] = useState(cartItems.length);
@@ -12,6 +13,10 @@ const StorePage = ({ onLogout, user, cartItems, setCartItems }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [toast, setToast] = useState(null);
+  const navigate = useNavigate();
+  // Notification State
+  const [showEventPopup, setShowEventPopup] = useState(false);
+  const [newEventsCount, setNewEventsCount] = useState(0);
 
   useEffect(() => {
     setCartCount(cartItems.length);
@@ -55,6 +60,50 @@ const StorePage = ({ onLogout, user, cartItems, setCartItems }) => {
 
     fetchProducts();
   }, []);
+
+  // --- CHECK FOR NEW EVENTS ---
+  // --- CHECK FOR NEW EVENTS (ID Based) ---
+  useEffect(() => {
+    if (!user || !user.id) return;
+
+    fetch(`${API_URL}/api/announcements?type=Customer`)
+      .then(res => res.json())
+      .then(events => {
+        if (events.length === 0) return;
+
+        // Get the Highest ID in the database list
+        // (e.g., if IDs are [1, 2, 5], the max is 5)
+        const latestEventId = Math.max(...events.map(e => e.id));
+        
+        // Check what the user last saw
+        const storageKey = `lastSeenEventId_${user.id}`;
+        const lastSeenId = parseInt(localStorage.getItem(storageKey) || '0');
+
+        // Logic: If the newest ID is bigger than the last one we saw, it's new!
+        if (latestEventId > lastSeenId) {
+          // Calculate how many are actually new (IDs > lastSeenId)
+          const newItemsCount = events.filter(e => e.id > lastSeenId).length;
+          setNewEventsCount(newItemsCount);
+          setShowEventPopup(true);
+        }
+      })
+      .catch(err => console.error("Event check failed", err));
+  }, [user]);
+
+  // --- PASTE THIS HERE ---
+  const handleGoToEvents = () => {
+    fetch(`${API_URL}/api/announcements?type=Customer`)
+        .then(res => res.json())
+        .then(events => {
+            if (events.length > 0) {
+                const latestEventId = Math.max(...events.map(e => e.id));
+                const storageKey = `lastSeenEventId_${user.id}`;
+                localStorage.setItem(storageKey, latestEventId.toString());
+            }
+            navigate('/store/events');
+        });
+  };
+  // ------------------------
 
   const changeQuantity = (productId, stock, delta) => {
     const max = Number.isFinite(Number(stock)) ? Number(stock) : Infinity;
@@ -104,11 +153,30 @@ const StorePage = ({ onLogout, user, cartItems, setCartItems }) => {
 
         <div className="store-right-controls">
           
-          {/* NEW: Events Button */}
-          <Link to="/store/events" className="store-nav-link" title="Community Events">
-            <MdEvent />
-            <span className="cart-count" style={{marginLeft: '2px', fontSize: '10px'}}>EVENTS</span>
-          </Link>
+          
+          {/* UPDATED: Events Button with Red Badge */}
+          {/* UPDATED: Events Button with Fixed Badge Positioning */}
+          <div 
+            onClick={handleGoToEvents} 
+            className="store-nav-link" 
+            title="Community Events" 
+            style={{cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px'}}
+          >
+            {/* 1. Wrapper for Icon + Badge only */}
+            <div style={{position: 'relative', display: 'flex'}}>
+                <MdEvent size={22} />
+                
+                {/* Badge sits relative to the Icon now */}
+                {newEventsCount > 0 && (
+                    <span className="notification-badge" style={{top: '-6px', right: '-6px'}}>
+                        {newEventsCount}
+                    </span>
+                )}
+            </div>
+
+            {/* 2. Text sits outside, safe from the badge */}
+            <span className="cart-count" style={{fontSize: '10px'}}>EVENTS</span>
+          </div>
 
           {/* Corrected Settings Link */}
           <Link to="/settings" className="store-nav-link" title="Settings">
@@ -213,6 +281,28 @@ const StorePage = ({ onLogout, user, cartItems, setCartItems }) => {
       {toast && (
         <div className="store-toast">
           {toast}
+        </div>
+      )}
+
+      {/* --- NEW EVENT POPUP --- */}
+      {showEventPopup && (
+        <div className="event-modal-overlay">
+          <div className="event-modal-content">
+            <div style={{fontSize: '40px', marginBottom: '10px'}}>🎉</div>
+            <h2 className="event-modal-title">New Events Posted!</h2>
+            <p className="event-modal-text">
+              We have added <strong>{newEventsCount}</strong> new community event{newEventsCount > 1 ? 's' : ''}. 
+              Check out our upcoming workshops and harvest sales.
+            </p>
+            
+            <button className="event-modal-btn btn-primary" onClick={handleGoToEvents}>
+              View Events
+            </button>
+            
+            <button className="event-modal-btn btn-secondary" onClick={() => setShowEventPopup(false)}>
+              Maybe Later
+            </button>
+          </div>
         </div>
       )}
     </div>
