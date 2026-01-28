@@ -1029,12 +1029,26 @@ app.post('/api/paypal/capture', authenticate, async (req, res) => {
 
 /* =====================
    ANNOUNCEMENTS (Events)
+   - Updated for Staff vs. Customer audiences
 ===================== */
 
-// 1. Get all announcements
-app.get('/api/announcements', authenticate, async (req, res) => {
+// 1. Get announcements (With optional filter ?type=Customer)
+app.get('/api/announcements', async (req, res) => {
+  const { type } = req.query; // Check if frontend wants specific audience
+  
   try {
-    const [events] = await pool.query('SELECT * FROM announcements ORDER BY event_date ASC');
+    let query = 'SELECT * FROM announcements';
+    const params = [];
+
+    // If ?type=Customer or ?type=Staff is sent, filter results
+    if (type) {
+      query += ' WHERE audience = ?';
+      params.push(type);
+    }
+    
+    query += ' ORDER BY event_date ASC';
+
+    const [events] = await pool.query(query, params);
     res.json(events);
   } catch (err) {
     console.error(err);
@@ -1046,14 +1060,16 @@ app.get('/api/announcements', authenticate, async (req, res) => {
 app.post('/api/announcements', authenticate, async (req, res) => {
   if (req.user.role !== 'Admin') return res.status(403).json({ error: 'Admin only' });
 
-  const { title, description, event_date, start_time, location, category } = req.body;
+  // ADDED 'audience' to the input
+  const { title, description, event_date, start_time, location, category, audience } = req.body;
+  
   if (!title || !event_date) return res.status(400).json({ error: 'Title and Date required' });
 
   try {
     await pool.query(
-      `INSERT INTO announcements (title, description, event_date, start_time, location, category)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [title, description, event_date, start_time, location, category]
+      `INSERT INTO announcements (title, description, event_date, start_time, location, category, audience)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [title, description, event_date, start_time, location, category, audience || 'Staff']
     );
     res.json({ success: true });
   } catch (err) {

@@ -14,6 +14,7 @@ import './App.css';
 import './Pages/Auth.css';
 import './DashboardLayout.css';
 import { API_URL } from './apiConfig';
+import StoreEvents from './Storepage/StoreEvents';
 
 const paypalOptions = {
   "client-id": process.env.REACT_APP_PAYPAL_CLIENT_ID || 'AWuacnvx2o_IhKJ6DLq4o8tk75LlO2ovipWzZ1cncKfrkGB2-zlOvSSBwp7leO401oMHK6U7eZrLkdWo',  // Fallback for dev; use your real ID
@@ -87,6 +88,16 @@ function App() {
             element={
               <ProtectedRoute user={user} requiredRole="Buyer">
                 <CartPage cartItems={cartItems} setCartItems={setCartItems} />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* NEW: Customer Events Page */}
+          <Route
+            path="/store/events"
+            element={
+              <ProtectedRoute user={user} requiredRole="Buyer">
+                <StoreEvents />
               </ProtectedRoute>
             }
           />

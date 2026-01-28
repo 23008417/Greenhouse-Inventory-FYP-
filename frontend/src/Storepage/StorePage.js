@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { MdSettings, MdShoppingCart, MdLogout, MdSearch } from 'react-icons/md';
+import { MdSettings, MdShoppingCart, MdLogout, MdSearch, MdEvent } from 'react-icons/md';
 import './StorePage.css';
 import { API_URL, buildImageUrl } from '../apiConfig';
 
@@ -103,6 +103,13 @@ const StorePage = ({ onLogout, user, cartItems, setCartItems }) => {
         </div> */}
 
         <div className="store-right-controls">
+          
+          {/* NEW: Events Button */}
+          <Link to="/store/events" className="store-nav-link" title="Community Events">
+            <MdEvent />
+            <span className="cart-count" style={{marginLeft: '2px', fontSize: '10px'}}>EVENTS</span>
+          </Link>
+
           <Link to="/settings" className="store-nav-link" title="Settings">
             <MdSettings />
           </Link>

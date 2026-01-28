@@ -10,7 +10,13 @@ const EventsPage = () => {
   
   // Form State
   const [formData, setFormData] = useState({
-    title: '', event_date: '', start_time: '', location: '', description: '', category: 'General'
+    title: '', 
+    event_date: '', 
+    start_time: '', 
+    location: '', 
+    description: '', 
+    category: 'General', 
+    audience: 'Staff' // <--- ADD THIS
   });
 
   // 1. Fetch Events from Database
@@ -101,6 +107,24 @@ const EventsPage = () => {
         <div className="event-card" style={{ padding: '2rem', marginBottom: '2rem', border: '2px solid #059669' }}>
           <h3 style={{marginBottom: '1rem'}}>New Announcement</h3>
           <form onSubmit={handleSubmit} style={{display: 'grid', gap: '1rem'}}>
+            {/* --- NEW: Audience Selector --- */}
+            <div style={{display: 'flex', flexDirection: 'column', gap: '0.5rem'}}>
+              <label style={{fontWeight: '600', color: '#374151', fontSize: '0.9rem'}}>Target Audience</label>
+              <select 
+                value={formData.audience}
+                onChange={e => setFormData({...formData, audience: e.target.value})}
+                style={{
+                    padding: '0.6rem', 
+                    borderRadius: '5px', 
+                    border: '1px solid #ccc', 
+                    backgroundColor: 'white',
+                    cursor: 'pointer'
+                }}
+              >
+                <option value="Staff">Internal Staff (Bulletin Board)</option>
+                <option value="Customer">Public Store (Customer Events)</option>
+              </select>
+            </div>
             <input 
               type="text" placeholder="Title (e.g., Mass Harvest)" required 
               className="input-field" 
@@ -155,7 +179,23 @@ const EventsPage = () => {
               </div>
 
               <div className="event-content">
-                <h3 className="event-title">{event.title}</h3>
+                <h3 className="event-title">
+                  {event.title}
+                  {/* Visual Badge */}
+                  <span style={{
+                      fontSize: '0.65rem', 
+                      padding: '2px 8px', 
+                      borderRadius: '12px', 
+                      marginLeft: '10px', 
+                      verticalAlign: 'middle',
+                      border: '1px solid rgba(0,0,0,0.1)',
+                      backgroundColor: event.audience === 'Customer' ? '#dbeafe' : '#f3f4f6',
+                      color: event.audience === 'Customer' ? '#1e40af' : '#374151',
+                      fontWeight: 'normal'
+                  }}>
+                      {event.audience || 'Staff'}
+                  </span>
+                </h3>
                 <p className="event-desc">{event.description}</p>
                 
                 <div className="event-details">
