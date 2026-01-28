@@ -9,6 +9,7 @@ const path = require('path');
 const multer = require('multer');
 const fs = require('fs');
 const paypal = require('@paypal/checkout-server-sdk');
+const { sendWelcomeEmail } = require('./emailService');
 
 /* =====================
    ENV VALIDATION
@@ -134,6 +135,14 @@ app.post('/api/auth/signup', async (req, res) => {
        VALUES (?, ?, ?, ?, 'Buyer')`,
       [email.toLowerCase(), hash, firstName || null, lastName || null]
     );
+
+    
+    sendWelcomeEmail({
+      to: email.toLowerCase(),
+      firstName
+    }).catch((emailErr) => {
+      console.error('Failed to send welcome email:', emailErr);
+    });
 
     res.status(201).json({
       token: generateToken(result.insertId),

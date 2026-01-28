@@ -277,7 +277,17 @@ const Inventory = () => {
               <tr key={p.id}>
                 <td>{p.name}</td>
                 <td>{p.crop_category}</td>
-                <td>{p.quantity}</td>
+                <td>
+                  <span
+                    className={
+                      Number(p.quantity) < 5
+                        ? 'quantity-indicator quantity-low'
+                        : 'quantity-indicator'
+                    }
+                  >
+                    {p.quantity}
+                  </span>
+                </td>
                 <td>
                   {p.seeding_date
                     ? new Date(p.seeding_date).toLocaleDateString('en-CA')

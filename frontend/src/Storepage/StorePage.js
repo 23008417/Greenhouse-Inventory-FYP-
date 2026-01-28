@@ -110,6 +110,7 @@ const StorePage = ({ onLogout, user, cartItems, setCartItems }) => {
             <span className="cart-count" style={{marginLeft: '2px', fontSize: '10px'}}>EVENTS</span>
           </Link>
 
+          {/* Corrected Settings Link */}
           <Link to="/settings" className="store-nav-link" title="Settings">
             <MdSettings />
           </Link>
