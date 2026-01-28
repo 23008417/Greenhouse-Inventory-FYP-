@@ -178,10 +178,10 @@ const StorePage = ({ onLogout, user, cartItems, setCartItems }) => {
             <span className="cart-count" style={{fontSize: '10px'}}>EVENTS</span>
           </div>
 
-          {/* Corrected Settings Link */}
+          {/* Corrected Settings Link
           <Link to="/settings" className="store-nav-link" title="Settings">
             <MdSettings />
-          </Link>
+          </Link> */}
 
           <Link to="/cartpage" className="store-nav-link" title="Cart">
             <MdShoppingCart /> <span className="cart-count">({cartCount})</span>
