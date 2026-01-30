@@ -73,19 +73,20 @@ const StorePage = ({ onLogout, user, cartItems, setCartItems }) => {
 
         // Get the Highest ID in the database list
         // (e.g., if IDs are [1, 2, 5], the max is 5)
-        const latestEventId = Math.max(...events.map(e => e.id));
-        
-        // Check what the user last saw
-        const storageKey = `lastSeenEventId_${user.id}`;
-        const lastSeenId = parseInt(localStorage.getItem(storageKey) || '0');
+        // Get the newest update time in the list
+const latestTime = Math.max(...events.map(e => new Date(e.updated_at).getTime()));
 
-        // Logic: If the newest ID is bigger than the last one we saw, it's new!
-        if (latestEventId > lastSeenId) {
-          // Calculate how many are actually new (IDs > lastSeenId)
-          const newItemsCount = events.filter(e => e.id > lastSeenId).length;
-          setNewEventsCount(newItemsCount);
-          setShowEventPopup(true);
-        }
+// Check what time the user last saw an update
+const storageKey = `lastSeenEventTime_${user.id}`;
+const lastSeenTime = parseInt(localStorage.getItem(storageKey) || '0');
+
+// If the latest update in the DB is newer than what we last saw
+if (latestTime > lastSeenTime) {
+  // Count how many events have been created or edited since our last visit
+  const newItemsCount = events.filter(e => new Date(e.updated_at).getTime() > lastSeenTime).length;
+  setNewEventsCount(newItemsCount);
+  setShowEventPopup(true);
+}
       })
       .catch(err => console.error("Event check failed", err));
   }, [user]);
@@ -96,9 +97,9 @@ const StorePage = ({ onLogout, user, cartItems, setCartItems }) => {
         .then(res => res.json())
         .then(events => {
             if (events.length > 0) {
-                const latestEventId = Math.max(...events.map(e => e.id));
-                const storageKey = `lastSeenEventId_${user.id}`;
-                localStorage.setItem(storageKey, latestEventId.toString());
+                const latestTime = Math.max(...events.map(e => new Date(e.updated_at).getTime()));
+                const storageKey = `lastSeenEventTime_${user.id}`;
+                localStorage.setItem(storageKey, latestTime.toString());
             }
             navigate('/store/events');
         });

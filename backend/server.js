@@ -1046,21 +1046,23 @@ app.get('/api/announcements', async (req, res) => {
   const { type } = req.query; // Check if frontend wants specific audience
   
   try {
-    let query = 'SELECT * FROM announcements';
+    // 1. The base query now ONLY looks for events Today or in the Future
+    let query = 'SELECT * FROM announcements WHERE event_date >= CURDATE()';
     const params = [];
 
-    // If ?type=Customer or ?type=Staff is sent, filter results
+    // 2. If the frontend sent ?type=Customer, we add AND instead of WHERE
     if (type) {
-      query += ' WHERE audience = ?';
+      query += ' AND audience = ?';
       params.push(type);
     }
-    
+
+    // 3. Keep events in order of date (soonest first)
     query += ' ORDER BY event_date ASC';
 
     const [events] = await pool.query(query, params);
     res.json(events);
   } catch (err) {
-    console.error(err);
+    console.error("Fetch Events Error:", err);
     res.status(500).json({ error: 'Failed to fetch events' });
   }
 });
@@ -1097,6 +1099,28 @@ app.delete('/api/announcements/:id', authenticate, async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to delete event' });
+  }
+});
+
+// 4. Edit an announcement
+app.put('/api/announcements/:id', authenticate, async (req, res) => {
+  if (req.user.role !== 'Admin') return res.status(403).json({ error: 'Admin only' });
+
+  const { title, description, event_date, start_time, location, category, audience } = req.body;
+  
+  if (!title || !event_date) return res.status(400).json({ error: 'Title and Date required' });
+
+  try {
+    await pool.query(
+      `UPDATE announcements 
+       SET title=?, description=?, event_date=?, start_time=?, location=?, category=?, audience=?
+       WHERE id=?`,
+      [title, description, event_date, start_time, location, category, audience || 'Staff', req.params.id]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to update event' });
   }
 });
 /* =====================

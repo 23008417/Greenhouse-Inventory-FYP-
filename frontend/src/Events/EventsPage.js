@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
 // FIX: Using react-icons instead of lucide-react
-import { FiClock, FiMapPin, FiPlus, FiTrash2, FiX } from 'react-icons/fi';
+import { FiClock, FiMapPin, FiPlus, FiTrash2, FiX, FiEdit } from 'react-icons/fi';
 import { API_URL } from '../apiConfig'; 
 import './EventsPage.css';
 
 const EventsPage = () => {
   const [events, setEvents] = useState([]);
   const [showForm, setShowForm] = useState(false);
+
+  const [editingId, setEditingId] = useState(null); // Null = Create Mode, Number = Edit Mode
   
   // Form State
   const [formData, setFormData] = useState({
@@ -51,13 +53,21 @@ const EventsPage = () => {
     }
   };
 
-  // 3. Handle Create
+  // 3. Handle Create OR Update
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const token = localStorage.getItem('token');
+    
+    // Determine URL and Method based on mode
+    const url = editingId 
+      ? `${API_URL}/api/announcements/${editingId}` 
+      : `${API_URL}/api/announcements`;
+      
+    const method = editingId ? 'PUT' : 'POST';
+
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`${API_URL}/api/announcements`, {
-        method: 'POST',
+      const res = await fetch(url, {
+        method: method,
         headers: { 
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
@@ -67,12 +77,29 @@ const EventsPage = () => {
       
       if (res.ok) {
         setShowForm(false);
-        setFormData({ title: '', event_date: '', start_time: '', location: '', description: '', category: 'General' });
+        setEditingId(null); // Reset mode
+        setFormData({ title: '', event_date: '', start_time: '', location: '', description: '', category: 'General', audience: 'Staff' });
         fetchEvents(); // Refresh list
       }
     } catch (err) {
-      alert("Failed to post announcement");
+      alert("Failed to save announcement");
     }
+  };
+
+  const handleEdit = (event) => {
+    // Fill the form with the event's current data
+    setFormData({
+      title: event.title,
+      event_date: event.event_date.split('T')[0], // Fix date format for input
+      start_time: event.start_time,
+      location: event.location,
+      description: event.description,
+      category: event.category,
+      audience: event.audience
+    });
+    setEditingId(event.id); // Set mode to Edit
+    setShowForm(true);      // Open the "popup" form
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // Helper to format date "2026-01-25" -> Month: JAN, Day: 25
@@ -95,7 +122,11 @@ const EventsPage = () => {
             <button 
               className="register-btn" 
               style={{width: 'auto', padding: '0.8rem 1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem'}}
-              onClick={() => setShowForm(!showForm)}
+              onClick={() => {
+                  setShowForm(!showForm);
+                  setEditingId(null); // Clear edit mode when closing
+                  setFormData({ title: '', event_date: '', start_time: '', location: '', description: '', category: 'General', audience: 'Staff' });
+              }}
             >
               {showForm ? <><FiX /> Cancel</> : <><FiPlus /> Post Announcement</>}
             </button>
@@ -105,8 +136,9 @@ const EventsPage = () => {
       {/* NEW EVENT FORM (Toggles Open/Close) */}
       {showForm && (
         <div className="event-card" style={{ padding: '2rem', marginBottom: '2rem', border: '2px solid #059669' }}>
-          <h3 style={{marginBottom: '1rem'}}>New Announcement</h3>
-          <form onSubmit={handleSubmit} style={{display: 'grid', gap: '1rem'}}>
+          <h3 style={{ marginBottom: '1rem' }}>
+            {editingId ? 'Edit Announcement' : 'New Announcement'}
+          </h3>          <form onSubmit={handleSubmit} style={{display: 'grid', gap: '1rem'}}>
             {/* --- NEW: Audience Selector --- */}
             <div style={{display: 'flex', flexDirection: 'column', gap: '0.5rem'}}>
               <label style={{fontWeight: '600', color: '#374151', fontSize: '0.9rem'}}>Target Audience</label>
@@ -158,8 +190,9 @@ const EventsPage = () => {
               onChange={e => setFormData({...formData, description: e.target.value})}
               style={{padding: '0.5rem', border: '1px solid #ccc', borderRadius: '5px'}}
             ></textarea>
-            <button type="submit" className="register-btn">Publish to Screens</button>
-          </form>
+            <button type="submit" className="register-btn">
+              {editingId ? 'Update Announcement' : 'Publish to Screens'}
+            </button>          </form>
         </div>
       )}
 
@@ -207,13 +240,31 @@ const EventsPage = () => {
                   </div>
                 </div>
 
-                <button 
+                {/* <button 
                   className="register-btn" 
                   style={{backgroundColor: '#fee2e2', color: '#b91c1c', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem'}}
                   onClick={() => handleDelete(event.id)}
                 >
                   <FiTrash2 /> Remove Announcement
-                </button>
+                </button> */}
+
+                <div style={{display: 'flex', gap: '10px', marginTop: 'auto'}}>
+                    <button 
+                      className="register-btn" 
+                      style={{backgroundColor: '#eff6ff', color: '#1e40af', border: '1px solid #dbeafe', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', flex: 1}}
+                      onClick={() => handleEdit(event)}
+                    >
+                      <FiEdit /> Edit
+                    </button>
+
+                    <button 
+                      className="register-btn" 
+                      style={{backgroundColor: '#fee2e2', color: '#b91c1c', border: '1px solid #fecaca', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', flex: 1}}
+                      onClick={() => handleDelete(event.id)}
+                    >
+                      <FiTrash2 /> Delete
+                    </button>
+                </div>
               </div>
 
             </div>
