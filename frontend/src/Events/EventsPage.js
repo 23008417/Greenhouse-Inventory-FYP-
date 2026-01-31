@@ -87,26 +87,35 @@ const EventsPage = () => {
   };
 
   const handleEdit = (event) => {
-    // Fill the form with the event's current data
+    // NEW: Create a local date object first to fix the timezone shift
+    const localDate = new Date(event.event_date);
+    const yyyy = localDate.getFullYear();
+    const mm = String(localDate.getMonth() + 1).padStart(2, '0');
+    const dd = String(localDate.getDate()).padStart(2, '0');
+    const formattedDate = `${yyyy}-${mm}-${dd}`;
+
     setFormData({
       title: event.title,
-      event_date: event.event_date.split('T')[0], // Fix date format for input
+      event_date: formattedDate, // <--- FIXED LINE
       start_time: event.start_time,
       location: event.location,
       description: event.description,
       category: event.category,
       audience: event.audience
     });
-    setEditingId(event.id); // Set mode to Edit
-    setShowForm(true);      // Open the "popup" form
+    setEditingId(event.id);
+    setShowForm(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // Helper to format date "2026-01-25" -> Month: JAN, Day: 25
   const formatDate = (dateString) => {
+    // This ensures the badge matches the local day, not the UTC day
     const date = new Date(dateString);
+    const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+
     return {
-      month: date.toLocaleString('default', { month: 'short' }).toUpperCase(),
+      month: months[date.getMonth()],
       day: date.getDate()
     };
   };
