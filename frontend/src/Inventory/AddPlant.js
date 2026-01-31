@@ -204,7 +204,7 @@ const AddPlant = () => {
               ) : (
                 <label className="upload-label">
                   <FiUpload className="upload-icon" />
-                  <span>Click or drag image here to upload</span>
+                  <span>Click here to upload</span>
                   <input type="file" accept="image/*" onChange={handleImageChange} hidden />
                 </label>
               )}
