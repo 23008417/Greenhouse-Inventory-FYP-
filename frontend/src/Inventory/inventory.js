@@ -82,6 +82,13 @@ const Inventory = () => {
         else if (!dateA) comparison = 1;
         else if (!dateB) comparison = -1;
         else comparison = dateA - dateB;
+      } else if (sortBy === 'quantity' || sortBy === 'price') {
+        const numA = Number(a[sortBy]);
+        const numB = Number(b[sortBy]);
+
+        const safeA = Number.isFinite(numA) ? numA : 0;
+        const safeB = Number.isFinite(numB) ? numB : 0;
+        comparison = safeA - safeB;
       } else {
         comparison = String(a[sortBy] || '').localeCompare(
           String(b[sortBy] || '')
@@ -249,6 +256,26 @@ const Inventory = () => {
             {' '}
             Sort by Harvest Date
             {sortBy === 'harvest_date'
+              ? ` (${sortDirection.toUpperCase()})`
+              : ''}
+          </button>
+
+          <button
+            onClick={() => {
+              if (sortBy === 'quantity') {
+                setSortDirection(prev =>
+                  prev === 'asc' ? 'desc' : 'asc'
+                );
+              } else {
+                setSortBy('quantity');
+                setSortDirection('asc');
+              }
+            }}
+          >
+            <FiBarChart2 />
+            {' '}
+            Sort by Quantity
+            {sortBy === 'quantity'
               ? ` (${sortDirection.toUpperCase()})`
               : ''}
           </button>
