@@ -6,10 +6,8 @@ import Dashboard from './Dashboard/Dashboard';
 import Inventory from './Inventory/inventory';
 import AddPlant from './Inventory/AddPlant';
 import EditPlant from './Inventory/EditPlant';
-import GrowingSystems from './GrowingSystems/GrowingSystems';
-import AddGrowingSystem from './GrowingSystems/AddGrowingSystem';
-import AddSystemType from './GrowingSystems/AddSystemType';
-import AddSystemTypeForm from './GrowingSystems/AddSystemTypeForm';
+import HarvestsInsights from './Reports/HarvestsInsights/HarvestsInsights';
+import SalesInsights from './Reports/SalesInsights/SalesInsights';
 import Customers from './Customers/Customers';
 import CropManagement from './CropManagement/CropManagement';
 import AddCrop from './CropManagement/AddCrop';
@@ -33,7 +31,7 @@ const DashboardLayout = () => {
           <Route path="plants/inventory/addplant" element={<AddPlant />} />
           <Route path="plants/inventory/edit/:id" element={<EditPlant />} />
 
-          {/* Growing systems */}
+          {/* Growing systems
           <Route path="plants/growing-systems" element={<GrowingSystems />} />
           <Route
             path="plants/growing-systems/add-growing-system"
@@ -46,10 +44,11 @@ const DashboardLayout = () => {
           <Route
             path="plants/growing-systems/add-system-type/new"
             element={<AddSystemTypeForm />}
-          />
+          /> */}
           
           <Route path="customers" element={<Customers />} />
-          <Route path="reports" element={<div style={{padding: '2rem'}}>Reports - Coming Soon</div>} />
+          <Route path="reports/harvestinsights" element={<HarvestsInsights />} />
+          <Route path="reports/salesinsights" element={<SalesInsights />} />
 
           <Route path="event" element={<EventsPage />} />
 

@@ -1123,6 +1123,363 @@ app.put('/api/announcements/:id', authenticate, async (req, res) => {
     res.status(500).json({ error: 'Failed to update event' });
   }
 });
+
+
+/* =====================
+   SALES INSIGHTS API
+===================== */
+app.get('/api/sales/insights', authenticate, async (req, res) => {
+  if (req.user.role !== 'Admin') return res.status(403).json({ error: 'Admin only' });
+ 
+  // 1. Determine Duration (Days)
+  const range = req.query.range;
+  const days = range === 'last_7_days' ? 7 : 
+               range === 'last_90_days' ? 90 : 
+               range === 'last_year' ? 365 : 30; // Default 30
+ 
+  // 2. Determine Comparison Offset
+  const compareType = req.query.compare || 'none';
+  let compareOffset = 0;
+  let hasComparison = false;
+ 
+  if (compareType === 'previous_period') {
+    compareOffset = days; 
+    hasComparison = true;
+  } else if (compareType === 'previous_week') {
+    compareOffset = 7;
+    hasComparison = true;
+  } else if (compareType === 'previous_month') {
+    compareOffset = 30;
+    hasComparison = true;
+  } else if (compareType === 'previous_year') {
+    compareOffset = 365;
+    hasComparison = true;
+  }
+ 
+  try {
+    // --- Helper Query Function ---
+    const getAggregates = (startOffset, duration) => {
+      return pool.query(`
+        SELECT 
+          COUNT(*) as orders, 
+          COALESCE(SUM(total_amount), 0) as revenue,
+          COALESCE(SUM((SELECT SUM(quantity_purchased) FROM order_items WHERE order_id = orders.order_id)), 0) as crops
+        FROM orders 
+        WHERE order_date >= DATE_SUB(NOW(), INTERVAL ? DAY) 
+        AND order_date < DATE_SUB(NOW(), INTERVAL ? DAY)
+      `, [startOffset + duration, startOffset]);
+    };
+ 
+    const getDailyData = (startOffset, duration) => {
+      // UPDATED SQL: 
+      // Changed '%d' (01-31) to '%e' (1-31) to remove leading zero
+      return pool.query(`
+        SELECT 
+          DATE_FORMAT(t1.order_date, '%e %b %Y') as date, 
+          MIN(t1.order_date) as raw_date,
+          COUNT(t1.order_id) as orders, 
+          SUM(t1.total_amount) as revenue, 
+          COALESCE(SUM(t2.crops_count), 0) as crops 
+        FROM orders t1
+        LEFT JOIN (
+          SELECT order_id, SUM(quantity_purchased) as crops_count 
+          FROM order_items 
+          GROUP BY order_id
+        ) t2 ON t1.order_id = t2.order_id
+        WHERE t1.order_date >= DATE_SUB(NOW(), INTERVAL ? DAY)
+        AND t1.order_date < DATE_SUB(NOW(), INTERVAL ? DAY)
+        GROUP BY date
+        ORDER BY raw_date ASC
+      `, [startOffset + duration, startOffset]);
+    };
+ 
+    // --- Execute Queries ---
+    const [currentStats] = await getAggregates(0, days);
+    const [prevStats] = await getAggregates(days, days);
+    const [currentRows] = await getDailyData(0, days);
+ 
+    // We still fetch previous rows to get the metric values (revenue, orders, etc.)
+    let prevRows = [];
+    if (hasComparison) {
+      const [rows] = await getDailyData(compareOffset, days);
+      prevRows = rows;
+    }
+ 
+    const curr = currentStats[0];
+    const prev = prevStats[0];
+    const calcChange = (c, p) => p === 0 ? 0 : ((c - p) / p) * 100;
+ 
+    // --- Helper: Date Formatter (DD Mon YYYY) ---
+    const formatDate = (dateObj) => {
+        return dateObj.toLocaleDateString('en-GB', {
+            day: 'numeric', month: 'short', year: 'numeric'
+        });
+    };
+ 
+    // --- Merge Chart Data ---
+    const chartData = currentRows.map((row, index) => {
+      const r = Number(row.revenue);
+      const o = Number(row.orders);
+      const c = Number(row.crops);
+      // Get previous metrics (if they exist in DB)
+      const prevRow = prevRows[index] || {}; 
+      const rPrev = hasComparison ? Number(prevRow.revenue || 0) : 0;
+      const oPrev = hasComparison ? Number(prevRow.orders || 0) : 0;
+      const cPrev = hasComparison ? Number(prevRow.crops || 0) : 0;
+ 
+      // --- FIX FOR DATES ---
+      // 1. We use the raw_date from the current row
+      const currentRawDate = new Date(row.raw_date);
+      // 2. We CALCULATE the previous date mathematically (Current - Offset)
+      // This ensures we always have a date, even if the DB has no sales (N/A) for that day
+      let calculatedPrevDate = '';
+      if (hasComparison) {
+          const prevDateObj = new Date(currentRawDate);
+          prevDateObj.setDate(prevDateObj.getDate() - compareOffset);
+          calculatedPrevDate = formatDate(prevDateObj);
+      }
+ 
+      return {
+        date: row.date, // This now includes Year from SQL (%d %b %Y)
+        // Use our Calculated Date instead of the DB date to avoid "N/A"
+        datePrev: calculatedPrevDate,
+ 
+        revenue: r,
+        orders: o,
+        crops: c,
+        avgOrder: o > 0 ? r / o : 0,
+ 
+        revenuePrev: rPrev,
+        ordersPrev: oPrev,
+        cropsPrev: cPrev,
+        avgOrderPrev: oPrev > 0 ? rPrev / oPrev : 0
+      };
+    });
+ 
+    res.json({
+      success: true,
+      metrics: {
+        total_revenue: { 
+            value: curr.revenue, 
+            change: calcChange(curr.revenue, prev.revenue) 
+        },
+        total_orders: { 
+            value: curr.orders, 
+            change: calcChange(curr.orders, prev.orders) 
+        },
+        total_crops_sold: { 
+            value: curr.crops, 
+            change: calcChange(curr.crops, prev.crops) 
+        },
+        average_order_value: { 
+            value: curr.orders > 0 ? curr.revenue / curr.orders : 0, 
+            change: calcChange((curr.orders > 0 ? curr.revenue / curr.orders : 0), (prev.orders > 0 ? prev.revenue / prev.orders : 0))
+        }
+      },
+      chartData: chartData
+    });
+ 
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to fetch sales insights' });
+  }
+});
+
+/* =====================
+   HARVESTS INSIGHTS API
+   Updated to use only existing database columns
+===================== */
+app.get('/api/harvests/insights', authenticate, async (req, res) => {
+  if (req.user.role !== 'Admin') return res.status(403).json({ error: 'Admin only' });
+ 
+  // 1. Determine Duration (Days)
+  const range = req.query.range;
+  const days = range === 'last_7_days' ? 7 :
+               range === 'last_90_days' ? 90 :
+               range === 'last_year' ? 365 : 30; // Default 30
+ 
+  // 2. Determine Comparison Offset
+  const compareType = req.query.compare || 'none';
+  let compareOffset = 0;
+  let hasComparison = false;
+ 
+  if (compareType === 'previous_period') {
+    compareOffset = days;
+    hasComparison = true;
+  } else if (compareType === 'previous_week') {
+    compareOffset = 7;
+    hasComparison = true;
+  } else if (compareType === 'previous_month') {
+    compareOffset = 30;
+    hasComparison = true;
+  } else if (compareType === 'previous_year') {
+    compareOffset = 365;
+    hasComparison = true;
+  }
+ 
+  try {
+    // --- Helper Query Function for Aggregates ---
+    const getAggregates = (startOffset, duration) => {
+      return pool.query(`
+        SELECT
+          COUNT(*) as harvests,
+          COALESCE(SUM(quantity), 0) as total_crops_kg
+        FROM plant_inventory
+        WHERE harvest_date IS NOT NULL
+        AND harvest_date >= DATE_SUB(NOW(), INTERVAL ? DAY)
+        AND harvest_date < DATE_SUB(NOW(), INTERVAL ? DAY)
+      `, [startOffset + duration, startOffset]);
+    };
+ 
+    // Get count of "Harvest Ready" batches from crop_management
+    const getReadyBatches = (startOffset, duration) => {
+      return pool.query(`
+        SELECT COUNT(*) as ready_batches
+        FROM crop_management
+        WHERE stage = 'Harvest Ready'
+        AND expected_harvest_date IS NOT NULL
+        AND expected_harvest_date >= DATE_SUB(NOW(), INTERVAL ? DAY)
+        AND expected_harvest_date < DATE_SUB(NOW(), INTERVAL ? DAY)
+      `, [startOffset + duration, startOffset]);
+    };
+ 
+    const getDailyData = (startOffset, duration) => {
+      return pool.query(`
+        SELECT
+          DATE_FORMAT(harvest_date, '%e %b %Y') as date,
+          MIN(harvest_date) as raw_date,
+          COUNT(plant_id) as harvests,
+          COALESCE(SUM(quantity), 0) as crops_kg
+        FROM plant_inventory
+        WHERE harvest_date IS NOT NULL
+        AND harvest_date >= DATE_SUB(NOW(), INTERVAL ? DAY)
+        AND harvest_date < DATE_SUB(NOW(), INTERVAL ? DAY)
+        GROUP BY DATE(harvest_date)
+        ORDER BY raw_date ASC
+      `, [startOffset + duration, startOffset]);
+    };
+ 
+    // Get daily ready batches count
+    const getDailyReadyBatches = (startOffset, duration) => {
+      return pool.query(`
+        SELECT
+          DATE_FORMAT(expected_harvest_date, '%e %b %Y') as date,
+          COUNT(*) as ready_batches
+        FROM crop_management
+        WHERE stage = 'Harvest Ready'
+        AND expected_harvest_date IS NOT NULL
+        AND expected_harvest_date >= DATE_SUB(NOW(), INTERVAL ? DAY)
+        AND expected_harvest_date < DATE_SUB(NOW(), INTERVAL ? DAY)
+        GROUP BY DATE(expected_harvest_date)
+      `, [startOffset + duration, startOffset]);
+    };
+ 
+    // --- Execute Queries ---
+    const [currentStats] = await getAggregates(0, days);
+    const [prevStats] = await getAggregates(days, days);
+    const [currentReady] = await getReadyBatches(0, days);
+    const [prevReady] = await getReadyBatches(days, days);
+    const [currentRows] = await getDailyData(0, days);
+ 
+    // Fetch previous period data if comparing
+    let prevRows = [];
+    if (hasComparison) {
+      const [rows] = await getDailyData(compareOffset, days);
+      prevRows = rows;
+    }
+ 
+    const curr = currentStats[0];
+    const prev = prevStats[0];
+    const currReady = currentReady[0];
+    const prevReadyBatches = prevReady[0];
+    const calcChange = (c, p) => p === 0 ? 0 : ((c - p) / p) * 100;
+ 
+    // Calculate average yield per batch
+    const currentAvgYield = curr.harvests > 0 ? curr.total_crops_kg / curr.harvests : 0;
+    const prevAvgYield = prev.harvests > 0 ? prev.total_crops_kg / prev.harvests : 0;
+ 
+    // --- Helper: Date Formatter (DD Mon YYYY) ---
+    const formatDate = (dateObj) => {
+      return dateObj.toLocaleDateString('en-GB', {
+        day: 'numeric', month: 'short', year: 'numeric'
+      });
+    };
+ 
+    // Get daily ready batches for chart
+    const [currentReadyDaily] = await getDailyReadyBatches(0, days);
+    let prevReadyDaily = [];
+    if (hasComparison) {
+      const [rows] = await getDailyReadyBatches(compareOffset, days);
+      prevReadyDaily = rows;
+    }
+ 
+    // Create a map for ready batches by date
+    const readyMap = {};
+    currentReadyDaily.forEach(row => { readyMap[row.date] = row.ready_batches; });
+ 
+    const prevReadyMap = {};
+    prevReadyDaily.forEach(row => { prevReadyMap[row.date] = row.ready_batches; });
+ 
+    // --- Merge Chart Data ---
+    const chartData = currentRows.map((row, index) => {
+      const h = Number(row.harvests);
+      const kg = Number(row.crops_kg);
+      const ready = Number(readyMap[row.date] || 0);
+      const prevRow = prevRows[index] || {};
+      const hPrev = hasComparison ? Number(prevRow.harvests || 0) : 0;
+      const kgPrev = hasComparison ? Number(prevRow.crops_kg || 0) : 0;
+      const readyPrev = hasComparison ? Number(prevReadyMap[prevRow.date] || 0) : 0;
+ 
+      const currentRawDate = new Date(row.raw_date);
+      let calculatedPrevDate = '';
+      if (hasComparison) {
+          const prevDateObj = new Date(currentRawDate);
+          prevDateObj.setDate(prevDateObj.getDate() - compareOffset);
+          calculatedPrevDate = formatDate(prevDateObj);
+      }
+ 
+      return {
+        date: row.date,
+        datePrev: calculatedPrevDate,
+        harvests: h,
+        cropsKg: kg,
+        readyBatches: ready,
+        avgYield: h > 0 ? kg / h : 0,
+        harvestsPrev: hPrev,
+        cropsKgPrev: kgPrev,
+        readyBatchesPrev: readyPrev,
+        avgYieldPrev: hPrev > 0 ? kgPrev / hPrev : 0
+      };
+    });
+ 
+    res.json({
+      success: true,
+      metrics: {
+        total_harvests: {
+          value: curr.harvests,
+          change: calcChange(curr.harvests, prev.harvests)
+        },
+        crops_harvested: {
+          value: curr.total_crops_kg,
+          change: calcChange(curr.total_crops_kg, prev.total_crops_kg)
+        },
+        harvest_ready: {
+          value: currReady.ready_batches,
+          change: calcChange(currReady.ready_batches, prevReadyBatches.ready_batches)
+        },
+        average_yield_per_batch: {
+          value: currentAvgYield,
+          change: calcChange(currentAvgYield, prevAvgYield)
+        }
+      },
+      chartData: chartData
+    });
+  } catch (err) {
+    console.error('Harvest Insights Error:', err);
+    res.status(500).json({ error: 'Failed to fetch harvest insights' });
+  }
+});
+
 /* =====================
    STATIC FILES
 ===================== */
