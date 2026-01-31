@@ -4,6 +4,26 @@ import { FiClock, FiMapPin, FiPlus, FiTrash2, FiX, FiEdit } from 'react-icons/fi
 import { API_URL } from '../apiConfig'; 
 import './EventsPage.css';
 
+const CATEGORY_IMAGES = {
+  // Workshop (Working): Planting/Hands-on
+  Workshop: "https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?auto=format&fit=crop&w=800&q=80",
+
+  // Harvest (NEW): Basket of fresh crops
+  Harvest: "https://images.unsplash.com/photo-1615486511484-92e172cc416d?auto=format&fit=crop&w=800&q=80",
+
+  // Wellness (NEW): Yoga/Peaceful
+  Wellness: "https://images.unsplash.com/photo-1544367563-12123d832d34?auto=format&fit=crop&w=800&q=80",
+
+  // Education (Working): Tech/Science
+  Education: "https://images.unsplash.com/photo-1558449028-b53a39d100fc?auto=format&fit=crop&w=800&q=80",
+
+  // Social (NEW): People gathering/Community
+  Social: "https://images.unsplash.com/photo-1543269865-cbf427effbad?auto=format&fit=crop&w=800&q=80",
+
+  // General (Working): Greenhouse wide shot
+  General: "https://images.unsplash.com/photo-1466692476868-aef1dfb1e735?auto=format&fit=crop&w=800&q=80"
+};
+
 const EventsPage = () => {
   const [events, setEvents] = useState([]);
   const [showForm, setShowForm] = useState(false);
@@ -17,7 +37,7 @@ const EventsPage = () => {
     start_time: '', 
     location: '', 
     description: '', 
-    category: 'General', 
+    category: 'Workshop', 
     audience: 'Staff' // <--- ADD THIS
   });
 
@@ -78,8 +98,7 @@ const EventsPage = () => {
       if (res.ok) {
         setShowForm(false);
         setEditingId(null); // Reset mode
-        setFormData({ title: '', event_date: '', start_time: '', location: '', description: '', category: 'General', audience: 'Staff' });
-        fetchEvents(); // Refresh list
+        setFormData({ title: '', event_date: '', start_time: '', location: '', description: '', category: 'Workshop', audience: 'Staff' });        fetchEvents(); // Refresh list
       }
     } catch (err) {
       alert("Failed to save announcement");
@@ -134,8 +153,7 @@ const EventsPage = () => {
               onClick={() => {
                   setShowForm(!showForm);
                   setEditingId(null); // Clear edit mode when closing
-                  setFormData({ title: '', event_date: '', start_time: '', location: '', description: '', category: 'General', audience: 'Staff' });
-              }}
+                setFormData({ title: '', event_date: '', start_time: '', location: '', description: '', category: 'Workshop', audience: 'Staff' });              }}
             >
               {showForm ? <><FiX /> Cancel</> : <><FiPlus /> Post Announcement</>}
             </button>
@@ -166,6 +184,29 @@ const EventsPage = () => {
                 <option value="Customer">Public Store (Customer Events)</option>
               </select>
             </div>
+
+            {/* --- NEW: Category Selector (Sets the Image) --- */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <label style={{ fontWeight: '600', color: '#374151', fontSize: '0.9rem' }}>Event Category (Image)</label>
+              <select
+                value={formData.category}
+                onChange={e => setFormData({ ...formData, category: e.target.value })}
+                style={{
+                  padding: '0.6rem',
+                  borderRadius: '5px',
+                  border: '1px solid #ccc',
+                  backgroundColor: 'white',
+                  cursor: 'pointer'
+                }}
+              >
+                <option value="Workshop">Workshop (Planting)</option>
+                <option value="Harvest">Harvest (Produce)</option>
+                <option value="Wellness">Wellness (Yoga/Zen)</option>
+                <option value="Education">Education (Tech/Labs)</option>
+                <option value="Social">Social (Community)</option>
+              </select>
+            </div>
+
             <input 
               type="text" placeholder="Title (e.g., Mass Harvest)" required 
               className="input-field" 
@@ -213,8 +254,7 @@ const EventsPage = () => {
               
               <div className="event-image">
                 {/* Fallback image based on category if you want, or just static for now */}
-                <img src="https://images.unsplash.com/photo-1466692476868-aef1dfb1e735?auto=format&fit=crop&w=500&q=80" alt={event.title} />
-                <div className="date-badge">
+                <img src={CATEGORY_IMAGES[event.category] || CATEGORY_IMAGES.Workshop} alt={event.title} />                <div className="date-badge">
                   <span className="date-month">{month}</span>
                   <span className="date-day">{day}</span>
                 </div>

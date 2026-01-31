@@ -5,6 +5,25 @@ import './StorePage.css';
 import { API_URL, buildImageUrl } from '../apiConfig';
 import { Link, useNavigate } from 'react-router-dom'; // Add useNavigate if missing
 
+const CATEGORY_IMAGES = {
+  // Workshop (Working): Planting/Hands-on
+  Workshop: "https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?auto=format&fit=crop&w=800&q=80",
+
+  // Harvest (NEW): Basket of fresh crops
+  Harvest: "https://images.unsplash.com/photo-1615486511484-92e172cc416d?auto=format&fit=crop&w=800&q=80",
+
+  // Wellness (NEW): Yoga/Peaceful
+  Wellness: "https://images.unsplash.com/photo-1544367563-12123d832d34?auto=format&fit=crop&w=800&q=80",
+
+  // Education (Working): Tech/Science
+  Education: "https://images.unsplash.com/photo-1558449028-b53a39d100fc?auto=format&fit=crop&w=800&q=80",
+
+  // Social (NEW): People gathering/Community
+  Social: "https://images.unsplash.com/photo-1543269865-cbf427effbad?auto=format&fit=crop&w=800&q=80",
+
+  // General (Working): Greenhouse wide shot
+  General: "https://images.unsplash.com/photo-1466692476868-aef1dfb1e735?auto=format&fit=crop&w=800&q=80"
+};
 const StorePage = ({ onLogout, user, cartItems, setCartItems }) => {
   const [cartCount, setCartCount] = useState(cartItems.length);
   const [searchTerm, setSearchTerm] = useState('');
