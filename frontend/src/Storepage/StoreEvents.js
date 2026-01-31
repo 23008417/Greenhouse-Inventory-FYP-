@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MdArrowBack, MdEvent, MdAccessTime, MdLocationOn } from 'react-icons/md';
+import { MdArrowBack, MdEvent, MdAccessTime, MdLocationOn, MdTimer } from 'react-icons/md';
 import { API_URL } from '../apiConfig';
 import './StorePage.css'; // Reusing your existing CSS
 
 const StoreEvents = () => {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [countdowns, setCountdowns] = useState({});
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -22,6 +23,71 @@ const StoreEvents = () => {
         setLoading(false);
       });
   }, []);
+
+  useEffect(() => {
+    if (events.length === 0) return;
+
+    const updateTimers = () => {
+      const newCountdowns = {};
+      const now = new Date();
+
+      events.forEach(event => {
+        // 1. Get Date parts
+        // This creates a date object and automatically adjusts it to your local timezone (SGT)
+        const tempDate = new Date(event.event_date);
+        const y = tempDate.getFullYear();
+        const m = tempDate.getMonth() + 1; // getMonth is 0-indexed
+        const d = tempDate.getDate();
+
+        // 2. Get Time parts
+        let hours = 9;
+        let minutes = 0;
+        let timePart = event.start_time || "09:00 AM";
+
+        if (timePart.toLowerCase().includes('am') || timePart.toLowerCase().includes('pm')) {
+          const match = timePart.match(/(\d+):(\d+)\s*(am|pm)/i);
+          if (match) {
+            hours = parseInt(match[1], 10);
+            minutes = parseInt(match[2], 10);
+            const modifier = match[3].toLowerCase();
+            if (hours === 12) hours = 0;
+            if (modifier === 'pm') hours += 12;
+          }
+        } else {
+          const parts = timePart.split(':');
+          hours = parseInt(parts[0] || 9, 10);
+          minutes = parseInt(parts[1] || 0, 10);
+        }
+
+        // Create the final target date in local time
+        const target = new Date(y, m - 1, d, hours, minutes, 0);
+        const diff = target.getTime() - now.getTime();
+
+        if (diff > 0) {
+          const totalSecs = Math.floor(diff / 1000);
+          const days = Math.floor(totalSecs / (3600 * 24));
+          const hrs = Math.floor((totalSecs % (3600 * 24)) / 3600);
+          const mins = Math.floor((totalSecs % 3600) / 60);
+          const secs = totalSecs % 60;
+
+          if (days > 0) {
+            newCountdowns[event.id] = `${days}d ${hrs}h ${mins}m`;
+          } else {
+            newCountdowns[event.id] = `${hrs}h ${mins}m ${secs}s`;
+          }
+        } else {
+          newCountdowns[event.id] = "LIVE NOW";
+        }
+      });
+      setCountdowns(newCountdowns); // Move this OUTSIDE the forEach
+    };
+
+    const interval = setInterval(updateTimers, 1000);
+    updateTimers();
+    return () => clearInterval(interval);
+  }, [events]);
+
+    
 
   return (
     <div className="store-page">
@@ -52,6 +118,11 @@ const StoreEvents = () => {
 
                 {events.map(event => (
                     <div key={event.id} className="store-event-card">
+                    <div className={`store-ticker-badge ${countdowns[event.id] === "LIVE NOW" ? 'is-live' : ''}`}>
+                      <span className="ticker-dot"></span>
+                      <MdTimer size={12} style={{ marginRight: '4px' }} />
+                      {countdowns[event.id] || "..."}
+                    </div>
                         <div>
                             <span className="store-event-date-badge">
                                 {new Date(event.event_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
