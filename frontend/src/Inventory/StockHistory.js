@@ -10,8 +10,21 @@ const formatAction = (action) => {
 };
 
 const formatLocalDateTime = (value) => {
-  const date = new Date(value);
-  // Force display in Singapore timezone with clear DD Mon YYYY, HH:MM format
+  if (!value) return '-';
+
+  // 1. Check if we are on the Live Site
+  const isLiveSite = window.location.hostname !== 'localhost';
+
+  let dateString = value;
+
+  // 2. If Live Site AND missing 'Z', treat as UTC (Add 'Z')
+  // If Localhost, leave it alone (it's already local time)
+  if (isLiveSite && !value.endsWith('Z')) {
+     dateString = `${value}Z`;
+  }
+
+  const date = new Date(dateString);
+  
   return date.toLocaleString('en-SG', {
     year: 'numeric',
     month: 'short',
