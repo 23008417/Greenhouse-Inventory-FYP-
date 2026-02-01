@@ -1662,6 +1662,19 @@ app.get('/api/admin/dashboard', authenticate, async (req, res) => {
       FROM orders o JOIN users u ON o.buyer_id = u.id ORDER BY o.order_date DESC LIMIT 5
     `);
 
+    // 5. Category Breakdown (For Pie Chart)
+    const [categoryRows] = await pool.query(`
+      SELECT crop_category as name, SUM(quantity) as value
+      FROM plant_inventory
+      GROUP BY crop_category
+    `);
+
+    // FIX: Convert "value" from String to Number so the Chart can read it
+    const categoryStats = categoryRows.map(row => ({
+      name: row.name,
+      value: Number(row.value) // <--- Crucial Fix
+    }));
+
     res.json({
       success: true,
       stats: { 
@@ -1673,7 +1686,8 @@ app.get('/api/admin/dashboard', authenticate, async (req, res) => {
       chartData: topProducts,
       alerts: lowStock,
       recentOrders: recentOrders,
-      revenueTrend: revenueTrend
+      revenueTrend: revenueTrend,
+      categoryData: categoryStats
     });
   } catch (err) {
     console.error("Dashboard Error:", err);

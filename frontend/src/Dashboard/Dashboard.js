@@ -6,9 +6,10 @@ import {
   FiCheckCircle, FiTrendingUp, FiTrendingDown, FiAlertCircle, FiChevronRight, FiCalendar,
   FiInfo, FiClock, FiAlertTriangle
 } from 'react-icons/fi';
-import { 
-  BarChart, Bar, LineChart, Line, AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid 
-} from 'recharts'; // <--- ADDED AreaChart, Area to this list
+import {
+  BarChart, Bar, LineChart, Line, AreaChart, Area, PieChart, Pie, Cell, // <--- Add Pie, Cell
+  XAxis, YAxis, Tooltip, ResponsiveContainer
+} from 'recharts';// <--- ADDED AreaChart, Area to this list
 import './Dashboard.css';
 import { API_URL } from '../apiConfig';
 
@@ -377,11 +378,48 @@ const Dashboard = () => {
           </div>
         </div>
 
+        
+
       </section>
 
       {/* --- BOTTOM ROW (ALERTS) --- */}
-      <section className="bottom-row">
+      <section className="centered-chart-row">
         
+        {/* --- NEW: INVENTORY BREAKDOWN PIE CHART --- */}
+        <div className="chart-card pie-card-wide">
+          <div className="chart-header">
+            <h4>Inventory Composition</h4>
+          </div>
+          <div style={{ width: '100%', height: 250 }}>
+            <ResponsiveContainer>
+              <PieChart>
+                <Pie
+                  data={data.categoryData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={90} /* Makes it a Donut Chart (Modern) */
+                  outerRadius={120}
+                  paddingAngle={5}
+                  dataKey="value"
+                >
+                  {data.categoryData && data.categoryData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={['#059669', '#10b981', '#34d399', '#6ee7b7', '#a7f3d0'][index % 5]} />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+            {/* Custom Legend */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '10px', marginTop: '10px', fontSize: '0.75rem' }}>
+              {data.categoryData && data.categoryData.map((entry, index) => (
+                <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: ['#059669', '#10b981', '#34d399', '#6ee7b7', '#a7f3d0'][index % 5] }}></span>
+                  {entry.name} ({entry.value})
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
        
 
       </section>
