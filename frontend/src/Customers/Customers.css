@@ -129,6 +129,33 @@
   border-color: #9ca3af;
 }
 
+.filter-btn.active {
+  background: #10b981;
+  color: white;
+  border-color: #10b981;
+}
+
+.filter-btn.active:hover {
+  background: #059669;
+  border-color: #059669;
+}
+
+.delete-btn {
+  padding: 0.5rem 0.75rem;
+  background: #ef4444;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: white;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.delete-btn:hover {
+  background: #dc2626;
+}
+
 .customers-table-container {
   background: white;
   border: 1px solid #e5e7eb;

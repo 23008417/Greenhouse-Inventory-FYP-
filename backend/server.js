@@ -235,6 +235,35 @@ app.get('/api/customers', authenticate, async (req, res) => {
   }
 });
 
+// Delete customer
+app.delete('/api/customers/:id', authenticate, async (req, res) => {
+  if (req.user.role !== 'Admin') {
+    return res.status(403).json({ error: 'Admin only' });
+  }
+
+  const customerId = req.params.id;
+
+  try {
+    // Check if customer exists
+    const [customer] = await pool.query(
+      'SELECT * FROM users WHERE id = ? AND role = "Buyer"',
+      [customerId]
+    );
+
+    if (customer.length === 0) {
+      return res.status(404).json({ error: 'Customer not found' });
+    }
+
+    // Delete the customer
+    await pool.query('DELETE FROM users WHERE id = ?', [customerId]);
+
+    res.json({ message: 'Customer deleted successfully' });
+  } catch (err) {
+    console.error('Failed to delete customer:', err);
+    res.status(500).json({ error: 'Failed to delete customer' });
+  }
+});
+
 /* =====================
    PLANTS
 ===================== */

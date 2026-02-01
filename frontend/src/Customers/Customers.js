@@ -8,8 +8,8 @@ const Customers = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [selectedCustomers, setSelectedCustomers] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [filterStatus, setFilterStatus] = useState('all');
   const [newCustomer, setNewCustomer] = useState({
     email: '',
     password: '',
@@ -50,28 +50,16 @@ const Customers = () => {
     }
   };
 
-  const handleSelectAll = (e) => {
-    if (e.target.checked) {
-      setSelectedCustomers(customers.map(c => c.id));
-    } else {
-      setSelectedCustomers([]);
-    }
-  };
-
-  const handleSelectCustomer = (customerId) => {
-    setSelectedCustomers(prev => {
-      if (prev.includes(customerId)) {
-        return prev.filter(id => id !== customerId);
-      } else {
-        return [...prev, customerId];
-      }
-    });
-  };
-
-  const filteredCustomers = customers.filter(customer =>
-    customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    customer.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredCustomers = customers.filter(customer => {
+    const matchesSearch = customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      customer.email.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    if (filterStatus === 'all') return matchesSearch;
+    if (filterStatus === 'active') return matchesSearch && customer.total_orders > 0;
+    if (filterStatus === 'new') return matchesSearch && customer.total_orders === 0;
+    
+    return matchesSearch;
+  });
 
   const formatDate = (dateString) => {
     if (!dateString) return '-';
@@ -191,7 +179,6 @@ const Customers = () => {
     <div className="customers-page">
       <div className="customers-header">
         <h1>
-          <span className="header-icon">👥</span>
           Customers
         </h1>
         <div className="header-actions">
@@ -213,11 +200,23 @@ const Customers = () => {
           />
         </div>
         <div className="filter-controls">
-          <button className="filter-btn">
-            <FiFilter /> Filter
+          <button 
+            className={`filter-btn ${filterStatus === 'all' ? 'active' : ''}`}
+            onClick={() => setFilterStatus('all')}
+          >
+            All
           </button>
-          <button className="sort-btn">
-            ↕ Sort
+          <button 
+            className={`filter-btn ${filterStatus === 'active' ? 'active' : ''}`}
+            onClick={() => setFilterStatus('active')}
+          >
+            Active
+          </button>
+          <button 
+            className={`filter-btn ${filterStatus === 'new' ? 'active' : ''}`}
+            onClick={() => setFilterStatus('new')}
+          >
+            New
           </button>
         </div>
       </div>
@@ -226,39 +225,24 @@ const Customers = () => {
         <table className="customers-table">
           <thead>
             <tr>
-              <th className="checkbox-col">
-                <input
-                  type="checkbox"
-                  onChange={handleSelectAll}
-                  checked={selectedCustomers.length === customers.length && customers.length > 0}
-                />
-              </th>
               <th>Customer name</th>
               <th>Contact</th>
               <th>Created on</th>
               <th>Last order</th>
               <th>Orders</th>
               <th>Amount spent</th>
-              <th className="actions-col"></th>
             </tr>
           </thead>
           <tbody>
             {filteredCustomers.length === 0 ? (
               <tr>
-                <td colSpan="8" className="no-data">
+                <td colSpan="6" className="no-data">
                   No customers found
                 </td>
               </tr>
             ) : (
               filteredCustomers.map((customer) => (
                 <tr key={customer.id}>
-                  <td className="checkbox-col">
-                    <input
-                      type="checkbox"
-                      checked={selectedCustomers.includes(customer.id)}
-                      onChange={() => handleSelectCustomer(customer.id)}
-                    />
-                  </td>
                   <td>
                     <div className="customer-name-cell">
                       <div
@@ -275,11 +259,6 @@ const Customers = () => {
                   <td>{formatDate(customer.last_order_date)}</td>
                   <td>{customer.total_orders || 0}</td>
                   <td>${Number(customer.total_spent || 0).toFixed(2)}</td>
-                  <td className="actions-col">
-                    <button className="more-btn">
-                      <FiMoreVertical />
-                    </button>
-                  </td>
                 </tr>
               ))
             )}
