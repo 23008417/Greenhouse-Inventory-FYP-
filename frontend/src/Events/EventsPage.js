@@ -39,6 +39,8 @@ const EventsPage = () => {
     audience: 'Staff' // <--- ADD THIS
   });
 
+  const [filterType, setFilterType] = useState('All');
+
   // 1. Fetch Events from Database
   const fetchEvents = async () => {
     try {
@@ -137,24 +139,77 @@ const EventsPage = () => {
     };
   };
 
+  // --- FILTER LOGIC ---
+  const filteredEvents = events.filter(event => {
+    if (filterType === 'All') return true; // Show everything
+    return event.audience === filterType;  // Match 'Staff' or 'Customer'
+  });
+
   return (
     <div className="events-container">
       <div className="events-header">
-        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem'}}>
-            <div>
-                <h1>Event Management</h1>
-                <p>Manage  events for greenhouse staff and customers.</p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <div>
+            <h1>Event Management</h1>
+            <p>Manage events for greenhouse staff and customers.</p>
+          </div>
+
+          <div style={{ display: 'flex', gap: '10px' }}>
+            {/* NEW: Color-Coordinated Filter Tabs */}
+            <div style={{ display: 'flex', background: 'white', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '4px', gap: '4px', marginRight: '10px' }}>
+
+              {/* 1. VIEW ALL BUTTON */}
+              <button
+                onClick={() => setFilterType('All')}
+                style={{
+                  border: 'none',
+                  background: filterType === 'All' ? '#111827' : 'transparent',
+                  color: filterType === 'All' ? 'white' : '#6b7280',
+                  padding: '6px 12px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '700', cursor: 'pointer', transition: '0.2s'
+                }}
+              >
+                View All
+              </button>
+
+              {/* 2. STAFF BUTTON (Matches Staff Badge) */}
+              <button
+                onClick={() => setFilterType('Staff')}
+                style={{
+                  border: 'none',
+                  background: filterType === 'Staff' ? '#f3f4f6' : 'transparent',
+                  color: filterType === 'Staff' ? '#374151' : '#6b7280',
+                  padding: '6px 12px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '700', cursor: 'pointer', transition: '0.2s'
+                }}
+              >
+                Internal Staff
+              </button>
+
+              {/* 3. CUSTOMER BUTTON (Matches Customer Badge) */}
+              <button
+                onClick={() => setFilterType('Customer')}
+                style={{
+                  border: 'none',
+                  background: filterType === 'Customer' ? '#dbeafe' : 'transparent',
+                  color: filterType === 'Customer' ? '#1e40af' : '#6b7280',
+                  padding: '6px 12px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '700', cursor: 'pointer', transition: '0.2s'
+                }}
+              >
+                Public Store
+              </button>
             </div>
-            <button 
-              className="register-btn" 
-              style={{width: 'auto', padding: '0.8rem 1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem'}}
+
+            <button
+              className="register-btn"
+              style={{ width: 'auto', padding: '0.8rem 1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
               onClick={() => {
-                  setShowForm(!showForm);
-                  setEditingId(null); // Clear edit mode when closing
-                setFormData({ title: '', event_date: '', start_time: '', location: '', description: '', category: 'Workshop', audience: 'Staff' });              }}
+                setShowForm(!showForm);
+                setEditingId(null);
+                setFormData({ title: '', event_date: '', start_time: '', location: '', description: '', category: 'Workshop', audience: 'Staff' });
+              }}
             >
               {showForm ? <><FiX /> Cancel</> : <><FiPlus /> Post Announcement</>}
             </button>
+          </div>
         </div>
       </div>
 
@@ -245,7 +300,7 @@ const EventsPage = () => {
       )}
 
       <div className="events-grid">
-        {events.map((event) => {
+        {filteredEvents.map((event) => {
           const { month, day } = formatDate(event.event_date);
           return (
             <div key={event.id} className="event-card">
