@@ -123,6 +123,8 @@ const EditPlant = () => {
     submitData.append('seeding_date', formData.seeding_date);
     submitData.append('harvest_date', formData.harvest_date || '');
     submitData.append('quantity', formData.quantity);
+    // Client-side timestamp for this change
+    submitData.append('movementTime', new Date().toISOString());
 
     if (imageFile) {
       submitData.append('image', imageFile);

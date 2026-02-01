@@ -280,7 +280,8 @@ app.post('/api/plants/add', authenticate, upload.single('image'), async (req, re
       seeding_date,
       harvest_date,
       quantity,
-      price
+      price,
+      movementTime
     } = req.body;
 
     if (!name || !crop_category || !seeding_date || !quantity) {
@@ -291,7 +292,11 @@ app.post('/api/plants/add', authenticate, upload.single('image'), async (req, re
       ? `/uploads/${req.file.filename}`
       : 'https://placehold.co/400x300?text=Plant';
 
-    await pool.query(
+    const numericQuantity = Number(quantity);
+    const numericPrice = Number(price) || 0;
+    const movementDate = movementTime ? new Date(movementTime) : new Date();
+
+    const [insertResult] = await pool.query(
       `INSERT INTO plant_inventory
       (seller_id, name, crop_category, growth_duration_weeks,
        seeding_date, harvest_date, quantity, price, image_url)
@@ -303,9 +308,26 @@ app.post('/api/plants/add', authenticate, upload.single('image'), async (req, re
         growth_duration_weeks || null,
         seeding_date,
         harvest_date || null,
-        Number(quantity),
-        Number(price) || 0,
+        numericQuantity,
+        numericPrice,
         image_url
+      ]
+    );
+
+    const plantId = insertResult.insertId;
+
+    // Log initial stock movement
+    await pool.query(
+      `INSERT INTO plant_inventory_movements
+        (plant_id, seller_id, action, quantity_before, quantity_after, quantity_change, created_at)
+       VALUES (?, ?, 'create', ?, ?, ?, ?)` ,
+      [
+        plantId,
+        req.user.id,
+        0,
+        numericQuantity,
+        numericQuantity,
+        movementDate
       ]
     );
 
@@ -441,7 +463,8 @@ app.put('/api/plants/:id', authenticate, upload.single('image'), async (req, res
     growth_duration_weeks,
     seeding_date,
     harvest_date,
-    quantity
+    quantity,
+    movementTime
   } = req.body;
 
   if (!name || !crop_category || !seeding_date || !quantity) {
@@ -450,7 +473,7 @@ app.put('/api/plants/:id', authenticate, upload.single('image'), async (req, res
 
   try {
     const [rows] = await pool.query(
-      `SELECT image_url FROM plant_inventory WHERE plant_id = ? AND seller_id = ?`,
+      `SELECT quantity, image_url FROM plant_inventory WHERE plant_id = ? AND seller_id = ?`,
       [plantId, req.user.id]
     );
 
@@ -459,6 +482,7 @@ app.put('/api/plants/:id', authenticate, upload.single('image'), async (req, res
     }
 
     const current = rows[0];
+    const quantityBefore = Number(current.quantity) || 0;
     const newImageUrl = req.file
       ? `/uploads/${req.file.filename}`
       : current.image_url;
@@ -466,6 +490,9 @@ app.put('/api/plants/:id', authenticate, upload.single('image'), async (req, res
     const durationWeeks = growth_duration_weeks
       ? parseInt(String(growth_duration_weeks).replace(/\D/g, ''), 10) || null
       : null;
+
+    const numericQuantity = Number(quantity);
+    const movementDate = movementTime ? new Date(movementTime) : new Date();
 
     await pool.query(
       `UPDATE plant_inventory
@@ -483,10 +510,27 @@ app.put('/api/plants/:id', authenticate, upload.single('image'), async (req, res
         durationWeeks,
         seeding_date,
         harvest_date || null,
-        Number(quantity),
+        numericQuantity,
         newImageUrl,
         plantId,
         req.user.id
+      ]
+    );
+
+    const quantityAfter = numericQuantity;
+    const quantityChange = quantityAfter - quantityBefore;
+
+    await pool.query(
+      `INSERT INTO plant_inventory_movements
+        (plant_id, seller_id, action, quantity_before, quantity_after, quantity_change, created_at)
+       VALUES (?, ?, 'update', ?, ?, ?, ?)` ,
+      [
+        plantId,
+        req.user.id,
+        quantityBefore,
+        quantityAfter,
+        quantityChange,
+        movementDate
       ]
     );
 
@@ -619,6 +663,37 @@ app.patch('/api/plants/:id/price', authenticate, async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to update price' });
+  }
+});
+
+// Stock movement history for inventory (Admin only)
+app.get('/api/stock-movements', authenticate, async (req, res) => {
+  if (req.user.role !== 'Admin') {
+    return res.status(403).json({ error: 'Admin only' });
+  }
+
+  try {
+    const [rows] = await pool.query(
+      `SELECT 
+         m.id,
+         m.created_at,
+         CONVERT_TZ(m.created_at, 'SYSTEM', 'Asia/Singapore') AS created_at_sg,
+         m.action,
+         m.quantity_before,
+         m.quantity_after,
+         m.quantity_change,
+         p.name AS plant_name
+       FROM plant_inventory_movements m
+       JOIN plant_inventory p ON p.plant_id = m.plant_id
+       WHERE m.seller_id = ?
+       ORDER BY m.created_at DESC, m.id DESC`,
+      [req.user.id]
+    );
+
+    res.json({ movements: rows });
+  } catch (err) {
+    console.error('Error fetching stock movements:', err);
+    res.status(500).json({ error: 'Failed to fetch stock movements' });
   }
 });
 

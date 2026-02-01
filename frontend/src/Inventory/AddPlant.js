@@ -76,6 +76,8 @@ const AddPlant = () => {
     submitData.append('harvest_date', formData.harvest_date || '');
     submitData.append('quantity', formData.quantity);
     submitData.append('price', 0);
+    // Client-side timestamp (Singapore local time encoded as ISO UTC)
+    submitData.append('movementTime', new Date().toISOString());
 
     if (imageFile) submitData.append('image', imageFile);
 
