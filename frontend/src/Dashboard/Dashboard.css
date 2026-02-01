@@ -331,3 +331,40 @@
   color: #059669;        /* Green Text */
   background-color: #ecfdf5; /* Very Light Green Background */
 }
+
+/* --- CENTERED CHART ROW --- */
+.centered-chart-row {
+  display: flex;
+  justify-content: center;
+  /* Forces content to middle of flexbox */
+  align-items: center;
+  width: 100%;
+  margin-bottom: 2rem;
+}
+
+.pie-card-wide {
+  width: 100%;
+  max-width: 95%;
+  /* Limits width so it doesn't touch edges */
+  margin: 0 auto;
+  /* SAFETY NET: Forces it to center even if flex fails */
+}
+
+/* Center the Title inside this specific card */
+.pie-card-wide .chart-header {
+  display: flex;
+  justify-content: center;
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+/* Make the title look nice and centered */
+.pie-card-wide .chart-header h4 {
+  font-size: 1.1rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 2px solid #e5e7eb;
+  /* Adds a nice underline */
+  padding-bottom: 10px;
+  display: inline-block;
+}
