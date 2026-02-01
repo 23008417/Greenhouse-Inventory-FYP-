@@ -70,13 +70,8 @@ const AdminLogin = ({ onLogin }) => {
           <div className="form-group">
             <label htmlFor="password">
               Password
-              <a href="/forgot-password" className="forgot-link">Forgot your password?</a>
             </label>
             <input type="password" id="password" name="password" required />
-          </div>
-          <div className="form-options">
-            <input type="checkbox" id="remember" />
-            <label htmlFor="remember">Remember me on this device</label>
           </div>
 
           <button type="submit" className="auth-button" disabled={loading}>
