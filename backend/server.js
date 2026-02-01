@@ -296,7 +296,7 @@ app.post('/api/plants/add', authenticate, upload.single('image'), async (req, re
     const numericPrice = Number(price) || 0;
     const movementDate = movementTime ? new Date(movementTime) : new Date();
 
-    const [insertResult] = const [result] = await pool.query(
+    const [insertResult] = await pool.query(
       `INSERT INTO plant_inventory
       (seller_id, name, crop_category, growth_duration_weeks,
        seeding_date, harvest_date, quantity, price, image_url)
