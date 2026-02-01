@@ -1124,6 +1124,33 @@ app.put('/api/announcements/:id', authenticate, async (req, res) => {
   }
 });
 
+// 5. Increment Interest (Add)
+app.post('/api/announcements/:id/interest', async (req, res) => {
+  try {
+    await pool.query(
+      'UPDATE announcements SET interested_count = interested_count + 1, updated_at = updated_at WHERE id = ?'      [req.params.id]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to update interest' });
+  }
+});
+
+// 6. Decrement Interest (Undo)
+app.post('/api/announcements/:id/uninterest', async (req, res) => {
+  try {
+    // GREATEST(..., 0) ensures it never goes below zero
+    await pool.query(
+      'UPDATE announcements SET interested_count = GREATEST(interested_count - 1, 0), updated_at = updated_at WHERE id = ?'      [req.params.id]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to update interest' });
+  }
+});
+
 
 /* =====================
    SALES INSIGHTS API

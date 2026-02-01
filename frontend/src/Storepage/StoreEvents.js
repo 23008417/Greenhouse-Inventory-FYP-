@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MdArrowBack, MdEvent, MdAccessTime, MdLocationOn, MdTimer } from 'react-icons/md';
+import { MdArrowBack, MdEvent, MdAccessTime, MdLocationOn, MdTimer, MdThumbUp, MdCheck } from 'react-icons/md';
 import { API_URL } from '../apiConfig';
 import './StorePage.css'; // Reusing your existing CSS
 
@@ -87,7 +87,42 @@ const StoreEvents = () => {
     return () => clearInterval(interval);
   }, [events]);
 
-    
+  // Helper to check if this browser has already clicked
+  const hasUserClicked = (eventId) => {
+    return localStorage.getItem(`interest_${eventId}`);
+  };
+
+  // Force re-render helper
+  const [dummyState, setDummyState] = useState(0);
+
+  const handleInterest = async (id) => {
+    const isClicked = hasUserClicked(id);
+    const endpoint = isClicked ? 'uninterest' : 'interest';
+    const math = isClicked ? -1 : 1;
+
+    try {
+      // 1. Call API
+      await fetch(`${API_URL}/api/announcements/${id}/${endpoint}`, { method: 'POST' });
+
+      // 2. Update UI Counter Locally
+      setEvents(prev => prev.map(e =>
+        e.id === id ? { ...e, interested_count: (e.interested_count || 0) + math } : e
+      ));
+
+      // 3. Toggle LocalStorage
+      if (isClicked) {
+        localStorage.removeItem(`interest_${id}`);
+      } else {
+        localStorage.setItem(`interest_${id}`, 'true');
+      }
+
+      // 4. Force refresh to update button color immediately
+      setDummyState(prev => prev + 1);
+
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   return (
     <div className="store-page">
@@ -135,6 +170,30 @@ const StoreEvents = () => {
                             <div><MdAccessTime size={16}/> {event.start_time}</div>
                             <div><MdLocationOn size={16}/> {event.location}</div>
                         </div>
+
+                    <button
+                      onClick={() => handleInterest(event.id)}
+                      style={{
+                        width: '100%',
+                        marginTop: '15px',
+                        padding: '10px',
+                        // Green background if clicked, White if not
+                        background: hasUserClicked(event.id) ? '#ecfdf5' : 'white',
+                        color: '#059669',
+                        border: '1px solid #059669',
+                        borderRadius: '8px',
+                        fontWeight: 'bold',
+                        cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                        transition: '0.2s'
+                      }}
+                    >
+                      {hasUserClicked(event.id) ? (
+                        <><MdCheck /> REGISTERED (Click to Undo)</>
+                      ) : (
+                        <><MdThumbUp /> I'M INTERESTED </>
+                      )}
+                    </button>
                     </div>
                 ))}
             </div>

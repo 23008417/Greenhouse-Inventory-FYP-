@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 // FIX: Using react-icons instead of lucide-react
-import { FiClock, FiMapPin, FiPlus, FiTrash2, FiX, FiEdit } from 'react-icons/fi';
+import { FiClock, FiMapPin, FiPlus, FiTrash2, FiX, FiEdit, FiUsers } from 'react-icons/fi';
 import { API_URL } from '../apiConfig'; 
 import './EventsPage.css';
 
@@ -9,11 +9,9 @@ const CATEGORY_IMAGES = {
   Workshop: "https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?auto=format&fit=crop&w=800&q=80",
 
   // Harvest (NEW): Basket of fresh crops
-  Harvest: "https://images.unsplash.com/photo-1615486511484-92e172cc416d?auto=format&fit=crop&w=800&q=80",
-
+  Harvest: "https://images.unsplash.com/photo-1464226184884-fa280b87c399?auto=format&fit=crop&w=800&q=80",
   // Wellness (NEW): Yoga/Peaceful
-  Wellness: "https://images.unsplash.com/photo-1544367563-12123d832d34?auto=format&fit=crop&w=800&q=80",
-
+  Wellness: "https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=800&q=80",
   // Education (Working): Tech/Science
   Education: "https://images.unsplash.com/photo-1558449028-b53a39d100fc?auto=format&fit=crop&w=800&q=80",
 
@@ -287,6 +285,12 @@ const EventsPage = () => {
                   <div className="detail-row">
                     <FiMapPin className="icon" /> {event.location}
                   </div>
+                  {/* Only show interest count for Public Customer events */}
+                  {event.audience === 'Customer' && (
+                    <div className="detail-row" style={{ marginTop: '0.5rem', color: '#059669', fontWeight: 'bold' }}>
+                      <FiUsers className="icon" /> {event.interested_count || 0} People Interested
+                    </div>
+                  )}
                 </div>
 
                 {/* <button 
