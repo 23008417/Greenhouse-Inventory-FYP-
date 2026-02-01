@@ -677,14 +677,17 @@ app.get('/api/stock-movements', authenticate, async (req, res) => {
       `SELECT 
          m.id,
          m.created_at,
-         CONVERT_TZ(m.created_at, 'SYSTEM', 'Asia/Singapore') AS created_at_sg,
          m.action,
          m.quantity_before,
          m.quantity_after,
          m.quantity_change,
-         p.name AS plant_name
+         p.name AS plant_name,
+         u.email AS email,
+         u.first_name AS admin_first_name,
+         u.last_name AS admin_last_name
        FROM plant_inventory_movements m
        JOIN plant_inventory p ON p.plant_id = m.plant_id
+       JOIN users u ON u.id = m.seller_id
        WHERE m.seller_id = ?
        ORDER BY m.created_at DESC, m.id DESC`,
       [req.user.id]

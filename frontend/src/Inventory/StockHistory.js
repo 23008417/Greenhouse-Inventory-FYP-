@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { FiClock } from 'react-icons/fi';
 import { API_URL } from '../apiConfig';
 import './Inventory.css';
 
@@ -9,17 +8,19 @@ const formatAction = (action) => {
   return action;
 };
 
-const formatLocalDateTime = (value) => {
-  const date = new Date(value);
-  // Force display in Singapore timezone with clear DD Mon YYYY, HH:MM format
-  return date.toLocaleString('en-SG', {
-    year: 'numeric',
+const formatAdmin = (movement) => {
+  // Backend exposes the admin email field as "email"
+  return movement.email || 'Admin';
+};
+
+const formatDate = (createdAt) => {
+  if (!createdAt) return '';
+  const d = new Date(createdAt);
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toLocaleDateString('en-SG', {
+    day: 'numeric',
     month: 'short',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-    timeZone: 'Asia/Singapore'
+    year: 'numeric'
   });
 };
 
@@ -77,7 +78,8 @@ const StockHistory = () => {
           <table>
             <thead>
               <tr>
-                <th><FiClock /> Date / Time</th>
+                <th>Date</th>
+                <th>Admin</th>
                 <th>Plant</th>
                 <th>Action</th>
                 <th>From</th>
@@ -88,7 +90,8 @@ const StockHistory = () => {
             <tbody>
               {movements.map(m => (
                 <tr key={m.id}>
-                  <td>{formatLocalDateTime(m.created_at_sg || m.created_at)}</td>
+                  <td>{formatDate(m.created_at)}</td>
+                  <td>{formatAdmin(m)}</td>
                   <td>{m.plant_name}</td>
                   <td>{formatAction(m.action)}</td>
                   <td>{m.quantity_before}</td>
