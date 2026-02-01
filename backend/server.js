@@ -291,7 +291,7 @@ app.post('/api/plants/add', authenticate, upload.single('image'), async (req, re
       ? `/uploads/${req.file.filename}`
       : 'https://placehold.co/400x300?text=Plant';
 
-    await pool.query(
+    const [result] = await pool.query(
       `INSERT INTO plant_inventory
       (seller_id, name, crop_category, growth_duration_weeks,
        seeding_date, harvest_date, quantity, price, image_url)
