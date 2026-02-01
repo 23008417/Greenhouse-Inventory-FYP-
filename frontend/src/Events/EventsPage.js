@@ -18,6 +18,7 @@ const CATEGORY_IMAGES = {
   // Social (NEW): People gathering/Community
   Social: "https://images.unsplash.com/photo-1543269865-cbf427effbad?auto=format&fit=crop&w=800&q=80",
 
+  Maintenance:"https://images.unsplash.com/vector-1738926671790-51ac3dac60a0?q=80&w=1180&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
   // General (Working): Greenhouse wide shot
   General: "https://images.unsplash.com/photo-1466692476868-aef1dfb1e735?auto=format&fit=crop&w=800&q=80"
 };

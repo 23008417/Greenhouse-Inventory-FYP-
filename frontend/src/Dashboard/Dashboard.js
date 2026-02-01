@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import mqtt from 'mqtt'; // <--- NEW IMPORT
 import { 
@@ -25,23 +25,52 @@ const Dashboard = () => {
   // --- HIVEMQ LIVE SENSOR LOGIC (TEMP + HUMIDITY) ---
   const [sensorData, setSensorData] = useState([]);
 
+  // --- DANGER SYSTEM STATE ---
+  const clientRef = useRef(null); // To control HiveMQ from the button
+  const [alertSent, setAlertSent] = useState(false); // Prevent spamming DB
+  const [showDangerModal, setShowDangerModal] = useState(false); // Popup
+
+  // --- FUNCTION: SAVE ALERT TO DATABASE ---
+  const triggerAutoAnnouncement = async (tempVal) => {
+    if (alertSent) return; // Stop if we already warned recently
+
+    try {
+      const token = localStorage.getItem('token');
+      await fetch(`${API_URL}/api/announcements`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          title: `⚠️ CRITICAL: High Temp (${tempVal}°C)`,
+          description: `Automated Sensor Alert: Greenhouse Zone A is overheating. Ventilation systems activated.`,
+          event_date: new Date().toISOString().split('T')[0], // Today
+          start_time: new Date().toLocaleTimeString(),
+          location: 'Sensor Node A',
+          category: 'Maintenance', // Matches your DB Enum
+          audience: 'Staff'        // Internal Alert
+        })
+      });
+      console.log("🚨 Critical Alert saved to DB!");
+      setAlertSent(true); // Lock it so we don't save 100 times
+    } catch (err) { console.error("Alert failed", err); }
+  };
+
+  // --- HIVEMQ LIVE SENSOR LOGIC ---
   useEffect(() => {
-    // 1. Connect to HiveMQ
-    const client = mqtt.connect('wss://broker.hivemq.com:8884/mqtt'); // Or use the EMQX URL if that worked better for you
-    const topic = 'fyp/greenhouse/23008417/combined'; // New topic for clean data
+    // Connect to HiveMQ (Secure Port 8884)
+    const client = mqtt.connect('wss://broker.hivemq.com:8884/mqtt');
+    const topic = 'fyp/greenhouse/23008417/combined';
+
+    clientRef.current = client; // <--- SAVE CLIENT FOR BUTTON USE
 
     client.on('connect', () => {
       console.log('✅ Connected to HiveMQ Cloud');
       client.subscribe(topic);
-      
-      // 2. Publish Fake Temp AND Humidity every 3 seconds
+
+      // Normal Loop: Random 24-26 degrees
       const interval = setInterval(() => {
-         const fakeTemp = (24 + Math.random() * 2).toFixed(1);
-         const fakeHum = (55 + Math.random() * 10).toFixed(0); // Random Humidity 55-65%
-         
-         // Send both as a JSON package
-         const payload = JSON.stringify({ temp: fakeTemp, hum: fakeHum });
-         client.publish(topic, payload);
+        const fakeTemp = (24 + Math.random() * 2).toFixed(1);
+        const fakeHum = (55 + Math.random() * 10).toFixed(0);
+        client.publish(topic, JSON.stringify({ temp: fakeTemp, hum: fakeHum }));
       }, 3000);
 
       return () => clearInterval(interval);
@@ -49,25 +78,26 @@ const Dashboard = () => {
 
     client.on('message', (receivedTopic, message) => {
       try {
-        // 3. Receive and Parse JSON
         const data = JSON.parse(message.toString());
         const now = new Date();
         const timeLabel = now.getHours() + ':' + now.getMinutes() + ':' + now.getSeconds();
+
+        // --- THE DANGER CHECK ---
+        if (parseFloat(data.temp) > 35.0) {
+          setShowDangerModal(true); // 1. Show Red Screen
+          triggerAutoAnnouncement(data.temp); // 2. Log to Database
+        }
 
         setSensorData(current => {
           const updated = [...current, { time: timeLabel, temp: data.temp, hum: data.hum }];
           if (updated.length > 20) updated.shift();
           return updated;
         });
-      } catch (err) {
-        console.error("Error parsing MQTT message:", err);
-      }
+      } catch (err) { console.error(err); }
     });
 
-    return () => {
-      if (client) client.end();
-    };
-  }, []);
+    return () => { if (client) client.end(); };
+  }, [alertSent]); // Re-bind if alert status changes
 
   // --- FETCH DASHBOARD DATA (FROM DATABASE) ---
   useEffect(() => {
@@ -248,15 +278,30 @@ const Dashboard = () => {
 
         {/* --- NEW: LIVE HIVEMQ TEMPERATURE --- */}
         <div className="chart-card">
-          <div className="chart-header">
-            <h4>Live Greenhouse Temp 🔴 <FiInfo title="Real-time data streaming via HiveMQ MQTT" /></h4>
+          <div className="chart-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h4>Live Greenhouse Temp 🔴</h4>
+
+            {/* --- SECRET DEMO BUTTON --- */}
+            <button
+              onClick={() => {
+                if (clientRef.current) {
+                  // Force publish 50°C to trigger the logic
+                  clientRef.current.publish('fyp/greenhouse/23008417/combined', JSON.stringify({ temp: 50.0, hum: 20 }));
+                }
+              }}
+              style={{
+                backgroundColor: '#fee2e2', color: '#b91c1c', border: '1px solid #fca5a5',
+                padding: '4px 10px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 'bold', cursor: 'pointer'
+              }}
+            >
+              ⚠️ Simulate Heatwave
+            </button>
           </div>
           <div className="chart-value">
-            <div>
-                <span className="chart-label">Current Temp</span>
-                <strong>
-                    {sensorData.length > 0 ? sensorData[sensorData.length - 1].temp : '--'}°C
-                </strong>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>              <span className="chart-label">Current Temp</span>
+              <strong>
+                {sensorData.length > 0 ? sensorData[sensorData.length - 1].temp : '--'}°C
+              </strong>
             </div>
           </div>
           <div style={{ width: '100%', height: 200 }}>
@@ -420,6 +465,37 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
+
+        {/* --- EMERGENCY POPUP --- */}
+        {showDangerModal && (
+          <div style={{
+            position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
+            backgroundColor: 'rgba(0,0,0,0.8)', zIndex: 9999,
+            display: 'flex', justifyContent: 'center', alignItems: 'center'
+          }}>
+            <div style={{
+              backgroundColor: '#fee2e2', border: '4px solid #ef4444',
+              padding: '2rem', borderRadius: '15px', textAlign: 'center',
+              maxWidth: '500px', boxShadow: '0 0 50px rgba(239, 68, 68, 0.5)'
+            }}>
+              <FiAlertTriangle size={60} color="#ef4444" />
+              <h1 style={{ color: '#991b1b', margin: '1rem 0' }}>CRITICAL ALERT</h1>
+              <p style={{ fontSize: '1.2rem', color: '#7f1d1d', marginBottom: '2rem' }}>
+                High Temperature Detected! <br />
+                <strong>Greenhouse Zone A is Overheating.</strong>
+              </p>
+              <button
+                onClick={() => setShowDangerModal(false)}
+                style={{
+                  padding: '12px 24px', backgroundColor: '#ef4444', color: 'white',
+                  border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '1rem'
+                }}
+              >
+                ACKNOWLEDGE ALARM
+              </button>
+            </div>
+          </div>
+        )}
        
 
       </section>
