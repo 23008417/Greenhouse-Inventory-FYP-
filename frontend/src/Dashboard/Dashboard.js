@@ -37,6 +37,36 @@ const Dashboard = () => {
   const HUMIDITY_DANGER_THRESHOLD = 85;
   const TEMP_DANGER_THRESHOLD = 35.0;
 
+  // --- SENSOR ALERTS (LIVE) ---
+  const [sensorAlerts, setSensorAlerts] = useState(() => {
+    try {
+      const stored = localStorage.getItem('sensorAlertsLog');
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const addSensorAlert = (alert) => {
+    setSensorAlerts((current) => {
+      const updated = [alert, ...current];
+      if (updated.length > 8) updated.pop();
+      return updated;
+    });
+  };
+
+  const clearSensorAlerts = () => {
+    if (!window.confirm('Clear the sensor alert log?')) return;
+    setSensorAlerts([]);
+    localStorage.removeItem('sensorAlertsLog');
+  };
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('sensorAlertsLog', JSON.stringify(sensorAlerts));
+    } catch {}
+  }, [sensorAlerts]);
+
   // --- FUNCTION: SAVE ALERT TO DATABASE ---
   const triggerAutoAnnouncement = async (tempVal) => {
     if (alertSent) return; // Stop if we already warned recently
@@ -117,10 +147,24 @@ const Dashboard = () => {
         if (parseFloat(data.temp) > TEMP_DANGER_THRESHOLD) {
           setShowDangerModal(true); // 1. Show Red Screen
           triggerAutoAnnouncement(data.temp); // 2. Log to Database
+          addSensorAlert({
+            id: `temp-${Date.now()}`,
+            type: 'Temp',
+            value: `${data.temp}°C`,
+            time: now.toLocaleTimeString(),
+            severity: 'high'
+          });
         }
         if (parseFloat(data.hum) > HUMIDITY_DANGER_THRESHOLD) {
           setShowHumidityDangerModal(true);
           triggerHumidityAnnouncement(data.hum);
+          addSensorAlert({
+            id: `hum-${Date.now()}`,
+            type: 'Humidity',
+            value: `${data.hum}%`,
+            time: now.toLocaleTimeString(),
+            severity: 'medium'
+          });
         }
 
         setSensorData(current => {
@@ -392,23 +436,6 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* 2. TOP PRODUCTS BAR CHART */}
-        <div className="chart-card">
-          <div className="chart-header">
-            <h4>Top Performing Crops </h4>
-          </div>
-          <div style={{ width: '100%', height: 250 }}>
-            <ResponsiveContainer>
-               <BarChart data={data.chartData} margin={{ top: 20, right: 0, left: -20, bottom: 0 }}>
-                 <Tooltip cursor={{fill: '#f9fafb'}} />
-                 <XAxis dataKey="name" fontSize={12} axisLine={false} tickLine={false} />
-                 <YAxis fontSize={12} axisLine={false} tickLine={false} />
-                 <Bar dataKey="sales" fill="#047857" radius={[4, 4, 0, 0]} name="Units Sold" />
-               </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
         {/* 3. RECENT ORDERS LIST (Replaces Capacity) */}
         <div className="card capacity-card">
           <div className="card-header">
@@ -448,7 +475,7 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Low Stock Alerts */}
+        {/* Low Stock Alerts (Swapped into Top Crops position) */}
         <div className="card alerts-card">
           <div className="card-header">
             <h4>Low Stock Alerts <span className="alert-badge red">{data.alerts.length}</span> <FiInfo /></h4>
@@ -473,13 +500,71 @@ const Dashboard = () => {
           </div>
         </div>
 
+        {/* --- SENSOR ALERTS TIMELINE (LIVE) --- */}
+        <div className="card capacity-card">
+          <div className="card-header">
+            <h4>Sensor Alerts <FiAlertTriangle /></h4>
+            <div className="card-actions">
+              <button
+                className="view-all-btn"
+                onClick={clearSensorAlerts}
+              >
+                Clear log
+              </button>
+            </div>
+          </div>
+          <div className="capacity-list">
+            <div className="capacity-header">
+              <span>Type</span>
+              <span>Value</span>
+              <span>When</span>
+            </div>
+            {sensorAlerts.map((alert) => (
+              <div key={alert.id} className="capacity-item">
+                <span className="location" style={{fontWeight: '600'}}>
+                  {alert.type}
+                </span>
+                <span
+                  className="system"
+                  style={{
+                    color: alert.severity === 'high' ? '#b91c1c' : '#1e40af',
+                    fontWeight: '600'
+                  }}
+                >
+                  {alert.value}
+                </span>
+                <div className="item-progress">
+                  <span className="capacity-partial">{alert.time}</span>
+                </div>
+              </div>
+            ))}
+            {sensorAlerts.length === 0 && <div style={{padding:'10px'}}>No sensor alerts yet.</div>}
+          </div>
+        </div>
+
         
 
       </section>
 
       {/* --- BOTTOM ROW (ALERTS) --- */}
       <section className="centered-chart-row">
-        
+        {/* --- TOP PERFORMING CROPS (Full Width) --- */}
+        <div className="chart-card pie-card-wide">
+          <div className="chart-header">
+            <h4>Top Performing Crops</h4>
+          </div>
+          <div style={{ width: '100%', height: 260 }}>
+            <ResponsiveContainer>
+               <BarChart data={data.chartData} margin={{ top: 20, right: 0, left: -20, bottom: 0 }}>
+                 <Tooltip cursor={{fill: '#f9fafb'}} />
+                 <XAxis dataKey="name" fontSize={12} axisLine={false} tickLine={false} />
+                 <YAxis fontSize={12} axisLine={false} tickLine={false} />
+                 <Bar dataKey="sales" fill="#047857" radius={[4, 4, 0, 0]} name="Units Sold" />
+               </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
         {/* --- NEW: INVENTORY BREAKDOWN PIE CHART --- */}
         <div className="chart-card pie-card-wide">
           <div className="chart-header">

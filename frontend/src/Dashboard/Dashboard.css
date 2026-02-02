@@ -2,7 +2,8 @@
   flex-grow: 1;
   padding: 1.5rem 2.5rem;
   overflow-y: auto;
-  height: 100vh;
+  min-height: 100vh;
+  height: auto;
   box-sizing: border-box;
   background-color: #f9fafb;
 }
@@ -336,10 +337,11 @@
 .centered-chart-row {
   display: flex;
   justify-content: center;
-  /* Forces content to middle of flexbox */
-  align-items: center;
+  align-items: stretch;
+  flex-direction: column;
+  gap: 1.5rem;
   width: 100%;
-  margin-bottom: 2rem;
+  margin-bottom: 3rem;
 }
 
 .pie-card-wide {
