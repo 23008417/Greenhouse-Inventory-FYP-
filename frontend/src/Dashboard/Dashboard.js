@@ -27,8 +27,15 @@ const Dashboard = () => {
 
   // --- DANGER SYSTEM STATE ---
   const clientRef = useRef(null); // To control HiveMQ from the button
-  const [alertSent, setAlertSent] = useState(false); // Prevent spamming DB
-  const [showDangerModal, setShowDangerModal] = useState(false); // Popup
+  const [alertSent, setAlertSent] = useState(false); // Prevent spamming DB (Temp)
+  const [alertSentHumidity, setAlertSentHumidity] = useState(false); // Prevent spamming DB (Humidity)
+  const [showDangerModal, setShowDangerModal] = useState(false); // Temp Popup
+  const [showHumidityDangerModal, setShowHumidityDangerModal] = useState(false); // Humidity Popup
+
+  // --- DANGER THRESHOLDS ---
+  // Typical greenhouse high-humidity risk starts around 85% RH.
+  const HUMIDITY_DANGER_THRESHOLD = 85;
+  const TEMP_DANGER_THRESHOLD = 35.0;
 
   // --- FUNCTION: SAVE ALERT TO DATABASE ---
   const triggerAutoAnnouncement = async (tempVal) => {
@@ -52,6 +59,30 @@ const Dashboard = () => {
       console.log("🚨 Critical Alert saved to DB!");
       setAlertSent(true); // Lock it so we don't save 100 times
     } catch (err) { console.error("Alert failed", err); }
+  };
+
+  // --- FUNCTION: SAVE HUMIDITY ALERT TO DATABASE ---
+  const triggerHumidityAnnouncement = async (humVal) => {
+    if (alertSentHumidity) return; // Stop if we already warned recently
+
+    try {
+      const token = localStorage.getItem('token');
+      await fetch(`${API_URL}/api/announcements`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          title: `CRITICAL: High Humidity (${humVal}%)`,
+          description: `Automated Sensor Alert: Greenhouse Zone A humidity is too high. Dehumidification/ventilation advised.`,
+          event_date: new Date().toISOString().split('T')[0], // Today
+          start_time: new Date().toLocaleTimeString(),
+          location: 'Sensor Node A',
+          category: 'Maintenance', // Matches your DB Enum
+          audience: 'Staff'        // Internal Alert
+        })
+      });
+      console.log("Critical humidity alert saved to DB!");
+      setAlertSentHumidity(true); // Lock it so we don't save 100 times
+    } catch (err) { console.error("Humidity alert failed", err); }
   };
 
   // --- HIVEMQ LIVE SENSOR LOGIC ---
@@ -83,9 +114,13 @@ const Dashboard = () => {
         const timeLabel = now.getHours() + ':' + now.getMinutes() + ':' + now.getSeconds();
 
         // --- THE DANGER CHECK ---
-        if (parseFloat(data.temp) > 35.0) {
+        if (parseFloat(data.temp) > TEMP_DANGER_THRESHOLD) {
           setShowDangerModal(true); // 1. Show Red Screen
           triggerAutoAnnouncement(data.temp); // 2. Log to Database
+        }
+        if (parseFloat(data.hum) > HUMIDITY_DANGER_THRESHOLD) {
+          setShowHumidityDangerModal(true);
+          triggerHumidityAnnouncement(data.hum);
         }
 
         setSensorData(current => {
@@ -97,7 +132,7 @@ const Dashboard = () => {
     });
 
     return () => { if (client) client.end(); };
-  }, [alertSent]); // Re-bind if alert status changes
+  }, [alertSent, alertSentHumidity]); // Re-bind if alert status changes
 
   // --- FETCH DASHBOARD DATA (FROM DATABASE) ---
   useEffect(() => {
@@ -251,8 +286,23 @@ const Dashboard = () => {
 
         {/* 2. LIVE HUMIDITY (BLUE) */}
         <div className="chart-card">
-          <div className="chart-header">
+          <div className="chart-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <h4>Live Humidity 💧</h4>
+
+            {/* --- DEMO BUTTON: HUMIDITY SPIKE --- */}
+            <button
+              onClick={() => {
+                if (clientRef.current) {
+                  clientRef.current.publish('fyp/greenhouse/23008417/combined', JSON.stringify({ temp: 26.0, hum: 92 }));
+                }
+              }}
+              style={{
+                backgroundColor: '#dbeafe', color: '#1e40af', border: '1px solid #93c5fd',
+                padding: '4px 10px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 'bold', cursor: 'pointer'
+              }}
+            >
+              Simulate High Humidity
+            </button>
           </div>
           <div className="chart-value">
             <span className="chart-label">Current: </span>
@@ -488,6 +538,37 @@ const Dashboard = () => {
                 onClick={() => setShowDangerModal(false)}
                 style={{
                   padding: '12px 24px', backgroundColor: '#ef4444', color: 'white',
+                  border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '1rem'
+                }}
+              >
+                ACKNOWLEDGE ALARM
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* --- HUMIDITY EMERGENCY POPUP --- */}
+        {showHumidityDangerModal && (
+          <div style={{
+            position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
+            backgroundColor: 'rgba(0,0,0,0.8)', zIndex: 9999,
+            display: 'flex', justifyContent: 'center', alignItems: 'center'
+          }}>
+            <div style={{
+              backgroundColor: '#dbeafe', border: '4px solid #3b82f6',
+              padding: '2rem', borderRadius: '15px', textAlign: 'center',
+              maxWidth: '500px', boxShadow: '0 0 50px rgba(59, 130, 246, 0.5)'
+            }}>
+              <FiAlertTriangle size={60} color="#3b82f6" />
+              <h1 style={{ color: '#1e3a8a', margin: '1rem 0' }}>CRITICAL HUMIDITY</h1>
+              <p style={{ fontSize: '1.2rem', color: '#1e3a8a', marginBottom: '2rem' }}>
+                High Humidity Detected! <br />
+                <strong>Greenhouse Zone A is above safe RH.</strong>
+              </p>
+              <button
+                onClick={() => setShowHumidityDangerModal(false)}
+                style={{
+                  padding: '12px 24px', backgroundColor: '#3b82f6', color: 'white',
                   border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '1rem'
                 }}
               >
