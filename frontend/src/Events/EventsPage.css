@@ -146,3 +146,30 @@
 .register-btn:hover {
   background-color: #047857;
 }
+
+/* Checkbox visibility */
+.event-select-row {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0.75rem 1rem 0 1rem;
+}
+
+.event-select,
+.bulk-select {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: #111827;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  padding: 6px 10px;
+  border-radius: 999px;
+}
+
+.event-select input,
+.bulk-select input {
+  width: 18px;
+  height: 18px;
+  accent-color: #059669;
+}

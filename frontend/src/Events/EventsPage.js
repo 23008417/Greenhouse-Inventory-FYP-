@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 // FIX: Using react-icons instead of lucide-react
-import { FiClock, FiMapPin, FiPlus, FiTrash2, FiX, FiEdit, FiUsers } from 'react-icons/fi';
+import { FiClock, FiMapPin, FiPlus, FiTrash2, FiX, FiEdit, FiUsers, FiCopy } from 'react-icons/fi';
 import { API_URL } from '../apiConfig'; 
 import './EventsPage.css';
 
@@ -24,11 +24,13 @@ const CATEGORY_IMAGES = {
 };
 
 const EventsPage = () => {
+  const containerRef = useRef(null);
   const [events, setEvents] = useState([]);
   const [showForm, setShowForm] = useState(false);
 
   const [editingId, setEditingId] = useState(null); // Null = Create Mode, Number = Edit Mode
-  
+  const [selectedIds, setSelectedIds] = useState([]); // Bulk select
+
   // Form State
   const [formData, setFormData] = useState({
     title: '', 
@@ -71,6 +73,41 @@ const EventsPage = () => {
       fetchEvents(); // Refresh list
     } catch (err) {
       alert("Failed to delete");
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.length === 0) return;
+    if (!window.confirm(`Delete ${selectedIds.length} selected events?`)) return;
+
+    try {
+      const token = localStorage.getItem('token');
+      await Promise.all(
+        selectedIds.map((id) =>
+          fetch(`${API_URL}/api/announcements/${id}`, {
+            method: 'DELETE',
+            headers: { Authorization: `Bearer ${token}` }
+          })
+        )
+      );
+      setSelectedIds([]);
+      fetchEvents();
+    } catch (err) {
+      alert("Failed to delete selected events");
+    }
+  };
+
+  const toggleSelect = (id) => {
+    setSelectedIds((current) =>
+      current.includes(id) ? current.filter((x) => x !== id) : [...current, id]
+    );
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.length === filteredEvents.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(filteredEvents.map((e) => e.id));
     }
   };
 
@@ -125,7 +162,38 @@ const EventsPage = () => {
     });
     setEditingId(event.id);
     setShowForm(true);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (containerRef.current) {
+      containerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const handleDuplicate = (event) => {
+    const baseDate = new Date(event.event_date);
+    const nextWeek = new Date(baseDate);
+    nextWeek.setDate(baseDate.getDate() + 7);
+    const yyyy = nextWeek.getFullYear();
+    const mm = String(nextWeek.getMonth() + 1).padStart(2, '0');
+    const dd = String(nextWeek.getDate()).padStart(2, '0');
+    const formattedDate = `${yyyy}-${mm}-${dd}`;
+
+    setFormData({
+      title: event.title,
+      event_date: formattedDate,
+      start_time: event.start_time,
+      location: event.location,
+      description: event.description,
+      category: event.category,
+      audience: event.audience
+    });
+    setEditingId(null); // Create mode
+    setShowForm(true);
+    if (containerRef.current) {
+      containerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
 
   // Helper to format date "2026-01-25" -> Month: JAN, Day: 25
@@ -147,7 +215,7 @@ const EventsPage = () => {
   });
 
   return (
-    <div className="events-container">
+    <div className="events-container" ref={containerRef}>
       <div className="events-header">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
           <div>
@@ -213,6 +281,32 @@ const EventsPage = () => {
           </div>
         </div>
       </div>
+
+      {/* Bulk Actions Bar */}
+      {filteredEvents.length > 0 && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '1rem' }}>
+          <label className="bulk-select">
+            <input
+              type="checkbox"
+              checked={selectedIds.length === filteredEvents.length}
+              onChange={toggleSelectAll}
+            />
+            Select all
+          </label>
+          {selectedIds.length > 0 && (
+            <>
+              <span style={{ fontSize: '0.85rem', color: '#6b7280' }}>{selectedIds.length} selected</span>
+              <button
+                className="register-btn"
+                style={{ backgroundColor: '#fee2e2', color: '#b91c1c', border: '1px solid #fecaca', padding: '0.4rem 0.8rem' }}
+                onClick={handleBulkDelete}
+              >
+                Delete Selected
+              </button>
+            </>
+          )}
+        </div>
+      )}
 
       {/* NEW EVENT FORM (Toggles Open/Close) */}
       {showForm && (
@@ -305,6 +399,16 @@ const EventsPage = () => {
           const { month, day } = formatDate(event.event_date);
           return (
             <div key={event.id} className="event-card">
+              <div className="event-select-row">
+                <label className="event-select">
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.includes(event.id)}
+                    onChange={() => toggleSelect(event.id)}
+                  />
+                  Select
+                </label>
+              </div>
               
               <div className="event-image">
                 {/* Fallback image based on category if you want, or just static for now */}
@@ -364,6 +468,14 @@ const EventsPage = () => {
                       onClick={() => handleEdit(event)}
                     >
                       <FiEdit /> Edit
+                    </button>
+
+                    <button 
+                      className="register-btn" 
+                      style={{backgroundColor: '#ecfdf5', color: '#047857', border: '1px solid #bbf7d0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', flex: 1}}
+                      onClick={() => handleDuplicate(event)}
+                    >
+                      <FiCopy /> Duplicate
                     </button>
 
                     <button 

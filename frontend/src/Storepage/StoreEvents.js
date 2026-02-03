@@ -8,6 +8,7 @@ const StoreEvents = () => {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [countdowns, setCountdowns] = useState({});
+  const [categoryFilter, setCategoryFilter] = useState('All');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -124,6 +125,12 @@ const StoreEvents = () => {
     }
   };
 
+  const baseCategories = ['Workshop', 'Harvest', 'Wellness', 'Education', 'Social'];
+  const categories = ['All', ...Array.from(new Set([...baseCategories, ...events.map(e => e.category)].filter(Boolean)))];
+  const filteredEvents = categoryFilter === 'All'
+    ? events
+    : events.filter(e => e.category === categoryFilter);
+
   return (
     <div className="store-page">
       {/* Simple Header for Navigation */}
@@ -141,17 +148,39 @@ const StoreEvents = () => {
             <p>Workshops & Harvest Days</p>
           </div>
 
+          {/* Category Filter Bar */}
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', margin: '0 0 16px 0' }}>
+            {categories.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setCategoryFilter(cat)}
+                style={{
+                  border: '1px solid #e5e7eb',
+                  background: categoryFilter === cat ? '#111827' : 'white',
+                  color: categoryFilter === cat ? 'white' : '#374151',
+                  padding: '6px 12px',
+                  borderRadius: '999px',
+                  fontSize: '0.8rem',
+                  fontWeight: '600',
+                  cursor: 'pointer'
+                }}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+
           {loading ? (
             <div className="store-no-results"><p>Loading...</p></div>
           ) : (
             <div className="store-product-grid">
-                {events.length === 0 && (
+                {filteredEvents.length === 0 && (
                     <div className="store-no-results" style={{gridColumn: '1/-1'}}>
-                        <p>No upcoming events scheduled.</p>
+                        <p>No events found for this category.</p>
                     </div>
                 )}
 
-                {events.map(event => (
+                {filteredEvents.map(event => (
                     <div key={event.id} className="store-event-card">
                     <div className={`store-ticker-badge ${countdowns[event.id] === "LIVE NOW" ? 'is-live' : ''}`}>
                       <span className="ticker-dot"></span>
