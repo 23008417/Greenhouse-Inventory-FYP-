@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useMemo } from 'react';   
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend,
   AreaChart, Area, LineChart, Line
 } from 'recharts';
-import { FiFilter, FiChevronDown, FiDownload } from 'react-icons/fi'; 
-import './SalesInsights.css'; 
+// Removed FiFilter from imports
+import { FiChevronDown, FiDownload } from 'react-icons/fi';
+import './SalesInsights.css';
 import { API_URL } from '../../apiConfig';
 
 const metrics = ['Total revenue', 'Total orders', 'Total crops sold', 'Average order value'];
@@ -26,14 +27,14 @@ const dateOptions = [
 const SalesInsights = () => {
   const [selectedMetric, setSelectedMetric] = useState('Total revenue');
   const [selectedChart, setSelectedChart] = useState('Bar chart');
-  
+
   // Date and Compare State
   const [dateRange, setDateRange] = useState('last_30_days');
   const [compareType, setCompareType] = useState('none');
-  
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  
+
   // Dropdown Toggles
   const [showDateDropdown, setShowDateDropdown] = useState(false);
   const [showCompareDropdown, setShowCompareDropdown] = useState(false);
@@ -67,7 +68,7 @@ const SalesInsights = () => {
     if (dateRange === 'last_90_days') {
       return [
         noneOption,
-        { label: 'Previous 3 months', value: 'previous_period' }, 
+        { label: 'Previous 3 months', value: 'previous_period' },
         { label: 'Previous year', value: 'previous_year' }
       ];
     }
@@ -85,16 +86,16 @@ const SalesInsights = () => {
     const fetchSalesData = async () => {
       const token = localStorage.getItem('token');
       setLoading(true);
-      
+
       try {
         const res = await fetch(`${API_URL}/api/sales/insights?range=${dateRange}&compare=${compareType}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         const json = await res.json();
-        
+
         if (json.success) {
           const m = json.metrics;
-          
+
           setMetricsData({
             'Total revenue': {
               value: m.totalRevenue?.value || m.total_revenue?.value || 0,
@@ -120,7 +121,7 @@ const SalesInsights = () => {
 
           const finalData = json.chartData.map(item => ({
             date: item.date,
-            datePrev: item.datePrev || '', 
+            datePrev: item.datePrev || '',
             revenue: item.revenue || 0,
             orders: item.orders || 0,
             crops: item.crops || 0,
@@ -142,7 +143,7 @@ const SalesInsights = () => {
     };
 
     fetchSalesData();
-  }, [dateRange, compareType]); 
+  }, [dateRange, compareType]);
 
   // --- EXPORT TO CSV FUNCTION ---
   const handleExport = () => {
@@ -172,10 +173,10 @@ const SalesInsights = () => {
     const csvString = csvRows.join('\n');
     const blob = new Blob(['\uFEFF' + csvString], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
-    
+
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', `sales_insights_${new Date().toISOString().slice(0,10)}.csv`);
+    link.setAttribute('download', `sales_insights_${new Date().toISOString().slice(0, 10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -183,7 +184,7 @@ const SalesInsights = () => {
 
   const { current: currentKey, previous: previousKey } = metricKeyMap[selectedMetric];
   const currentMetric = metricsData[selectedMetric];
-  
+
   const currentRangeLabel = dateOptions.find(opt => opt.value === dateRange)?.label || 'Last 30 days';
   const currentCompareLabel = compareOptions.find(opt => opt.value === compareType)?.label || 'None';
   const isComparing = compareType !== 'none';
@@ -224,21 +225,21 @@ const SalesInsights = () => {
           const displayDate = isCurrent ? label : data.datePrev;
           const rawValue = p.value;
           const formattedValue = (selectedMetric.includes('revenue') || selectedMetric.includes('value'))
-             ? `$${Number(rawValue).toFixed(2)}`
-             : Math.round(rawValue);
+            ? `$${Number(rawValue).toFixed(2)}`
+            : Math.round(rawValue);
 
           return (
-            <div key={idx} style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
+            <div key={idx} style={{
+              display: 'flex',
+              alignItems: 'center',
               justifyContent: 'space-between',
               marginBottom: idx !== payload.length - 1 ? '4px' : '0',
               minWidth: '180px'
             }}>
               <div style={{ display: 'flex', alignItems: 'center', color: '#6b7280' }}>
-                <span style={{ 
-                  display: 'inline-block', width: 10, height: 10, 
-                  backgroundColor: p.color, marginRight: 8, borderRadius: 2 
+                <span style={{
+                  display: 'inline-block', width: 10, height: 10,
+                  backgroundColor: p.color, marginRight: 8, borderRadius: 2
                 }}></span>
                 <span>{displayDate}</span>
               </div>
@@ -257,10 +258,10 @@ const SalesInsights = () => {
     const mainColor = '#047857';
 
     const previousProps = {
-        name: currentCompareLabel,
-        dataKey: previousKey,
-        stroke: prevColor,
-        fill: prevColor,
+      name: currentCompareLabel,
+      dataKey: previousKey,
+      stroke: prevColor,
+      fill: prevColor,
     };
 
     switch (selectedChart) {
@@ -271,8 +272,8 @@ const SalesInsights = () => {
             <YAxis />
             <Tooltip cursor={{ fill: "#F5F5F5" }} content={<CustomTooltip />} />
             <Legend content={renderLegend} />
-            <Bar dataKey={currentKey} fill={mainColor} radius={[4,4,0,0]} name="Current" />
-            {isComparing && <Bar {...previousProps} radius={[4,4,0,0]} />}
+            <Bar dataKey={currentKey} fill={mainColor} radius={[4, 4, 0, 0]} name="Current" />
+            {isComparing && <Bar {...previousProps} radius={[4, 4, 0, 0]} />}
           </BarChart>
         );
       case 'Area chart':
@@ -314,7 +315,7 @@ const SalesInsights = () => {
 
   return (
     <main className="sales-main">
-      
+
       {/* 1. Header Title */}
       <div className="sales-header" style={{ marginBottom: '0' }}>
         <h1 style={{ marginBottom: '10px' }}>Sales insights</h1>
@@ -325,70 +326,70 @@ const SalesInsights = () => {
 
       {/* 3. Actions Row */}
       <div className="sales-actions" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
-          
-          {/* LEFT: Date & Compare */}
-          <div style={{ display: 'flex', gap: '10px' }}>
-            
-            {/* Date Range Dropdown */}
-            <div style={{ position: 'relative', display: 'inline-block' }}>
-              <button onClick={() => { setShowDateDropdown(!showDateDropdown); setShowCompareDropdown(false); }}>
-                {/* INLINE STYLES FORCED HERE to ensure Green Color */}
-                <span style={{ color: '#6b7280' }}>Date range: </span> 
-                <span style={{ color: '#047857', fontWeight: 500 }}>{currentRangeLabel}</span> 
-                <FiChevronDown />
-              </button>
-              
-              {showDateDropdown && (
-                <div className="dropdown-menu" style={{ position: 'absolute', top: '110%', left: 0, backgroundColor: 'white', border: '1px solid #ddd', borderRadius: '6px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', zIndex: 50, minWidth: '160px', overflow: 'hidden' }}>
-                  {dateOptions.map((option) => (
-                    <div key={option.value}
-                      onClick={() => {
-                        setDateRange(option.value);
-                        setShowDateDropdown(false);
-                        setCompareType('none'); 
-                      }}
-                      className="dropdown-item"
-                      style={{ padding: '10px 16px', cursor: 'pointer', fontSize: '14px', backgroundColor: dateRange === option.value ? '#f3f4f6' : 'white' }}
-                    >
-                      {option.label}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
 
-            {/* Compare Dropdown */}
-            <div style={{ position: 'relative', display: 'inline-block' }}>
-              <button onClick={() => { setShowCompareDropdown(!showCompareDropdown); setShowDateDropdown(false); }}>
-                {/* INLINE STYLES FORCED HERE to ensure Green Color */}
-                <span style={{ color: '#6b7280' }}>Compare: </span> 
-                <span style={{ color: '#047857', fontWeight: 500 }}>{currentCompareLabel}</span> 
-                <FiChevronDown />
-              </button>
+        {/* LEFT: Date & Compare */}
+        <div style={{ display: 'flex', gap: '10px' }}>
 
-              {showCompareDropdown && (
-                <div className="dropdown-menu" style={{ position: 'absolute', top: '110%', left: 0, backgroundColor: 'white', border: '1px solid #ddd', borderRadius: '6px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', zIndex: 50, minWidth: '160px', overflow: 'hidden' }}>
-                  {compareOptions.map((option) => (
-                    <div key={option.value}
-                      onClick={() => {
-                        setCompareType(option.value);
-                        setShowCompareDropdown(false);
-                      }}
-                      className="dropdown-item"
-                      style={{ padding: '10px 16px', cursor: 'pointer', fontSize: '14px', backgroundColor: compareType === option.value ? '#f3f4f6' : 'white' }}
-                    >
-                      {option.label}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+          {/* Date Range Dropdown */}
+          <div style={{ position: 'relative', display: 'inline-block' }}>
+            <button onClick={() => { setShowDateDropdown(!showDateDropdown); setShowCompareDropdown(false); }}>
+              {/* INLINE STYLES FORCED HERE to ensure Green Color */}
+              <span style={{ color: '#6b7280' }}>Date range: </span>
+              <span style={{ color: '#047857', fontWeight: 500 }}>{currentRangeLabel}</span>
+              <FiChevronDown />
+            </button>
+
+            {showDateDropdown && (
+              <div className="dropdown-menu" style={{ position: 'absolute', top: '110%', left: 0, backgroundColor: 'white', border: '1px solid #ddd', borderRadius: '6px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', zIndex: 50, minWidth: '160px', overflow: 'hidden' }}>
+                {dateOptions.map((option) => (
+                  <div key={option.value}
+                    onClick={() => {
+                      setDateRange(option.value);
+                      setShowDateDropdown(false);
+                      setCompareType('none');
+                    }}
+                    className="dropdown-item"
+                    style={{ padding: '10px 16px', cursor: 'pointer', fontSize: '14px', backgroundColor: dateRange === option.value ? '#f3f4f6' : 'white' }}
+                  >
+                    {option.label}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
-          {/* RIGHT: Export Button */}
-          <button className="icon-btn" onClick={handleExport}>
-            <FiDownload /> Export
-          </button>
+          {/* Compare Dropdown */}
+          <div style={{ position: 'relative', display: 'inline-block' }}>
+            <button onClick={() => { setShowCompareDropdown(!showCompareDropdown); setShowDateDropdown(false); }}>
+              {/* INLINE STYLES FORCED HERE to ensure Green Color */}
+              <span style={{ color: '#6b7280' }}>Compare: </span>
+              <span style={{ color: '#047857', fontWeight: 500 }}>{currentCompareLabel}</span>
+              <FiChevronDown />
+            </button>
+
+            {showCompareDropdown && (
+              <div className="dropdown-menu" style={{ position: 'absolute', top: '110%', left: 0, backgroundColor: 'white', border: '1px solid #ddd', borderRadius: '6px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', zIndex: 50, minWidth: '160px', overflow: 'hidden' }}>
+                {compareOptions.map((option) => (
+                  <div key={option.value}
+                    onClick={() => {
+                      setCompareType(option.value);
+                      setShowCompareDropdown(false);
+                    }}
+                    className="dropdown-item"
+                    style={{ padding: '10px 16px', cursor: 'pointer', fontSize: '14px', backgroundColor: compareType === option.value ? '#f3f4f6' : 'white' }}
+                  >
+                    {option.label}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* RIGHT: Export Button */}
+        <button className="icon-btn" onClick={handleExport}>
+          <FiDownload /> Export
+        </button>
       </div>
 
       {/* KPI Cards */}
@@ -398,7 +399,7 @@ const SalesInsights = () => {
           const displayValue = formatValue(metric, metricData.value);
           const trendClass = metricData.isPositive ? 'positive' : 'negative';
           const trendSymbol = metricData.isPositive ? '↑' : '↓';
-          
+
           return (
             <div key={idx} className="kpi-card" onClick={() => setSelectedMetric(metric)}>
               <span>{metric}</span>
@@ -452,7 +453,7 @@ const SalesInsights = () => {
       <div className="sales-table-card">
         <div className="table-header">
           <h3>Breakdown</h3>
-          <button><FiFilter /> Filter</button>
+          {/* REMOVED FILTER BUTTON HERE */}
         </div>
         <table>
           <thead>

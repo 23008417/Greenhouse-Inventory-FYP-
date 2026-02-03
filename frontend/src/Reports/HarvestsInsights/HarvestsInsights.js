@@ -3,7 +3,8 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend,
   AreaChart, Area, LineChart, Line
 } from 'recharts';
-import { FiFilter, FiChevronDown, FiDownload } from 'react-icons/fi';
+// Removed FiFilter from imports
+import { FiChevronDown, FiDownload } from 'react-icons/fi';
 import './HarvestsInsights.css';
 import { API_URL } from '../../apiConfig';
 
@@ -26,13 +27,13 @@ const dateOptions = [
 const HarvestsInsights = () => {
   const [selectedMetric, setSelectedMetric] = useState('Total harvests');
   const [selectedChart, setSelectedChart] = useState('Bar chart');
-  
+
   const [dateRange, setDateRange] = useState('last_30_days');
   const [compareType, setCompareType] = useState('none');
-  
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  
+
   const [showDateDropdown, setShowDateDropdown] = useState(false);
   const [showCompareDropdown, setShowCompareDropdown] = useState(false);
 
@@ -84,7 +85,7 @@ const HarvestsInsights = () => {
     const fetchAndProcessData = async () => {
       const token = localStorage.getItem('token');
       setLoading(true);
-      
+
       try {
         const res = await fetch(`${API_URL}/api/crops`, {
           headers: { Authorization: `Bearer ${token}` }
@@ -94,11 +95,11 @@ const HarvestsInsights = () => {
 
         // 1. Determine Date Boundaries
         const durationDays = dateRange === 'last_7_days' ? 7 : dateRange === 'last_90_days' ? 90 : 30;
-        
+
         // Current Period
         const now = new Date();
-        now.setHours(23, 59, 59, 999); 
-        
+        now.setHours(23, 59, 59, 999);
+
         const currentEndDate = new Date(now);
         const currentStartDate = new Date(now);
         currentStartDate.setDate(currentEndDate.getDate() - (durationDays - 1));
@@ -107,83 +108,83 @@ const HarvestsInsights = () => {
         // --- UPDATED LOGIC START ---
         // Always calculate a previous period for the metrics, 
         // even if comparison is 'none'.
-        
+
         let offsetDays = durationDays; // Default: Compare vs Previous Period implicitly
-        
+
         // If user explicitly chose a different comparison, use that instead
         if (compareType === 'previous_week') {
-            offsetDays = 7;
+          offsetDays = 7;
         } else if (compareType === 'previous_month') {
-            offsetDays = 30;
+          offsetDays = 30;
         } else if (compareType === 'previous_year') {
-            offsetDays = 365;
+          offsetDays = 365;
         }
-        
+
         // Previous Period Calculation
         const prevEndDate = new Date(currentEndDate);
         prevEndDate.setDate(prevEndDate.getDate() - offsetDays);
-        
+
         const prevStartDate = new Date(currentStartDate);
         prevStartDate.setDate(prevStartDate.getDate() - offsetDays);
         // --- UPDATED LOGIC END ---
 
         const processWindow = (start, end, allCrops) => {
-            const filtered = allCrops.filter(crop => {
-                const hDate = new Date(crop.harvest_date);
-                return hDate >= start && hDate <= end && crop.harvest_date;
-            });
+          const filtered = allCrops.filter(crop => {
+            const hDate = new Date(crop.harvest_date);
+            return hDate >= start && hDate <= end && crop.harvest_date;
+          });
 
-            const totalHarvests = filtered.length;
-            const uniqueCropsSet = new Set();
-            let daysToHarvestSum = 0;
-            let daysToHarvestCount = 0;
-            const dailyMap = {};
+          const totalHarvests = filtered.length;
+          const uniqueCropsSet = new Set();
+          let daysToHarvestSum = 0;
+          let daysToHarvestCount = 0;
+          const dailyMap = {};
 
-            filtered.forEach(crop => {
-                uniqueCropsSet.add(crop.name);
-                if (crop.seeding_date && crop.harvest_date) {
-                    const seedDate = new Date(crop.seeding_date);
-                    const harvestDate = new Date(crop.harvest_date);
-                    const diff = Math.floor((harvestDate - seedDate) / (1000 * 60 * 60 * 24));
-                    if (diff >= 0) {
-                        daysToHarvestSum += diff;
-                        daysToHarvestCount += 1;
-                    }
-                }
+          filtered.forEach(crop => {
+            uniqueCropsSet.add(crop.name);
+            if (crop.seeding_date && crop.harvest_date) {
+              const seedDate = new Date(crop.seeding_date);
+              const harvestDate = new Date(crop.harvest_date);
+              const diff = Math.floor((harvestDate - seedDate) / (1000 * 60 * 60 * 24));
+              if (diff >= 0) {
+                daysToHarvestSum += diff;
+                daysToHarvestCount += 1;
+              }
+            }
 
-                const dateKey = new Date(crop.harvest_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-                if (!dailyMap[dateKey]) {
-                    dailyMap[dateKey] = {
-                        harvests: 0, uniqueSet: new Set(), daysSum: 0, daysCount: 0
-                    };
-                }
-                dailyMap[dateKey].harvests += 1;
-                dailyMap[dateKey].uniqueSet.add(crop.name);
-                
-                if (crop.seeding_date && crop.harvest_date) {
-                     const seedDate = new Date(crop.seeding_date);
-                     const harvestDate = new Date(crop.harvest_date);
-                     const diff = Math.floor((harvestDate - seedDate) / (1000 * 60 * 60 * 24));
-                     if(diff >= 0) {
-                         dailyMap[dateKey].daysSum += diff;
-                         dailyMap[dateKey].daysCount += 1;
-                     }
-                }
-            });
+            const dateKey = new Date(crop.harvest_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+            if (!dailyMap[dateKey]) {
+              dailyMap[dateKey] = {
+                harvests: 0, uniqueSet: new Set(), daysSum: 0, daysCount: 0
+              };
+            }
+            dailyMap[dateKey].harvests += 1;
+            dailyMap[dateKey].uniqueSet.add(crop.name);
 
-            const avgDays = daysToHarvestCount > 0 ? daysToHarvestSum / daysToHarvestCount : 0;
-            const weeks = durationDays / 7;
-            const freq = weeks > 0 ? totalHarvests / weeks : 0;
+            if (crop.seeding_date && crop.harvest_date) {
+              const seedDate = new Date(crop.seeding_date);
+              const harvestDate = new Date(crop.harvest_date);
+              const diff = Math.floor((harvestDate - seedDate) / (1000 * 60 * 60 * 24));
+              if (diff >= 0) {
+                dailyMap[dateKey].daysSum += diff;
+                dailyMap[dateKey].daysCount += 1;
+              }
+            }
+          });
 
-            return {
-                metrics: {
-                    harvests: totalHarvests,
-                    uniqueCrops: uniqueCropsSet.size,
-                    avgDays: avgDays,
-                    frequency: freq
-                },
-                dailyMap
-            };
+          const avgDays = daysToHarvestCount > 0 ? daysToHarvestSum / daysToHarvestCount : 0;
+          const weeks = durationDays / 7;
+          const freq = weeks > 0 ? totalHarvests / weeks : 0;
+
+          return {
+            metrics: {
+              harvests: totalHarvests,
+              uniqueCrops: uniqueCropsSet.size,
+              avgDays: avgDays,
+              frequency: freq
+            },
+            dailyMap
+          };
         };
 
         // 2. Process Data (Always process both now)
@@ -195,86 +196,86 @@ const HarvestsInsights = () => {
         const dateIterator = new Date(currentStartDate);
 
         while (dateIterator <= currentEndDate) {
-            const dateStr = dateIterator.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-            
-            const prevDateIter = new Date(dateIterator);
-            prevDateIter.setDate(prevDateIter.getDate() - offsetDays);
-            const prevDateStr = prevDateIter.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+          const dateStr = dateIterator.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 
-            const currDayStats = currentData.dailyMap[dateStr] || { harvests: 0, uniqueSet: new Set(), daysSum: 0, daysCount: 0 };
-            const prevDayStats = prevData.dailyMap[prevDateStr] || { harvests: 0, uniqueSet: new Set(), daysSum: 0, daysCount: 0 };
+          const prevDateIter = new Date(dateIterator);
+          prevDateIter.setDate(prevDateIter.getDate() - offsetDays);
+          const prevDateStr = prevDateIter.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 
-            const getCumulativeHarvests = (map, start, end) => {
-                 let sum = 0;
-                 const iter = new Date(start);
-                 while(iter <= end) {
-                     const k = iter.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-                     if(map[k]) sum += map[k].harvests;
-                     iter.setDate(iter.getDate() + 1);
-                 }
-                 return sum;
-            };
+          const currDayStats = currentData.dailyMap[dateStr] || { harvests: 0, uniqueSet: new Set(), daysSum: 0, daysCount: 0 };
+          const prevDayStats = prevData.dailyMap[prevDateStr] || { harvests: 0, uniqueSet: new Set(), daysSum: 0, daysCount: 0 };
 
-            const daysSinceStart = Math.max(1, (dateIterator - currentStartDate) / (1000 * 60 * 60 * 24) + 1);
-            const weeksPassed = daysSinceStart / 7;
-            const currCumHarvests = getCumulativeHarvests(currentData.dailyMap, currentStartDate, dateIterator);
-            const prevCumHarvests = getCumulativeHarvests(prevData.dailyMap, prevStartDate, prevDateIter);
+          const getCumulativeHarvests = (map, start, end) => {
+            let sum = 0;
+            const iter = new Date(start);
+            while (iter <= end) {
+              const k = iter.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+              if (map[k]) sum += map[k].harvests;
+              iter.setDate(iter.getDate() + 1);
+            }
+            return sum;
+          };
 
-            // Important: We populate prev data here for metrics, but we hide it in the chart later if isComparing is false
-            finalChartData.push({
-                date: dateStr,
-                datePrev: prevDateStr, 
-                
-                harvests: currDayStats.harvests,
-                uniqueCrops: currDayStats.uniqueSet.size,
-                avgDaysToHarvest: currDayStats.daysCount > 0 ? currDayStats.daysSum / currDayStats.daysCount : 0,
-                harvestFrequency: weeksPassed > 0 ? currCumHarvests / weeksPassed : 0,
+          const daysSinceStart = Math.max(1, (dateIterator - currentStartDate) / (1000 * 60 * 60 * 24) + 1);
+          const weeksPassed = daysSinceStart / 7;
+          const currCumHarvests = getCumulativeHarvests(currentData.dailyMap, currentStartDate, dateIterator);
+          const prevCumHarvests = getCumulativeHarvests(prevData.dailyMap, prevStartDate, prevDateIter);
 
-                harvestsPrev: prevDayStats.harvests,
-                uniqueCropsPrev: prevDayStats.uniqueSet.size,
-                avgDaysToHarvestPrev: prevDayStats.daysCount > 0 ? prevDayStats.daysSum / prevDayStats.daysCount : 0,
-                harvestFrequencyPrev: weeksPassed > 0 ? prevCumHarvests / weeksPassed : 0,
-            });
+          // Important: We populate prev data here for metrics, but we hide it in the chart later if isComparing is false
+          finalChartData.push({
+            date: dateStr,
+            datePrev: prevDateStr,
 
-            dateIterator.setDate(dateIterator.getDate() + 1);
+            harvests: currDayStats.harvests,
+            uniqueCrops: currDayStats.uniqueSet.size,
+            avgDaysToHarvest: currDayStats.daysCount > 0 ? currDayStats.daysSum / currDayStats.daysCount : 0,
+            harvestFrequency: weeksPassed > 0 ? currCumHarvests / weeksPassed : 0,
+
+            harvestsPrev: prevDayStats.harvests,
+            uniqueCropsPrev: prevDayStats.uniqueSet.size,
+            avgDaysToHarvestPrev: prevDayStats.daysCount > 0 ? prevDayStats.daysSum / prevDayStats.daysCount : 0,
+            harvestFrequencyPrev: weeksPassed > 0 ? prevCumHarvests / weeksPassed : 0,
+          });
+
+          dateIterator.setDate(dateIterator.getDate() + 1);
         }
 
         setChartData(finalChartData);
 
         // 4. Set Metrics Data with "Always On" Change Calculation
         const calcChange = (curr, prev) => {
-             // Case 1: Previous was 0, but we have data now -> 100% Growth
-             if (prev === 0 && curr > 0) return 100;
-             // Case 2: Both 0 -> No change
-             if (prev === 0) return 0;
-             // Case 3: Standard calc
-             return ((curr - prev) / prev) * 100;
+          // Case 1: Previous was 0, but we have data now -> 100% Growth
+          if (prev === 0 && curr > 0) return 100;
+          // Case 2: Both 0 -> No change
+          if (prev === 0) return 0;
+          // Case 3: Standard calc
+          return ((curr - prev) / prev) * 100;
         };
 
         const cm = currentData.metrics;
         const pm = prevData.metrics;
 
         setMetricsData({
-            'Total harvests': { 
-                value: cm.harvests, 
-                change: calcChange(cm.harvests, pm.harvests), 
-                isPositive: (cm.harvests - pm.harvests) >= 0 
-            },
-            'Unique crops harvested': { 
-                value: cm.uniqueCrops, 
-                change: calcChange(cm.uniqueCrops, pm.uniqueCrops), 
-                isPositive: (cm.uniqueCrops - pm.uniqueCrops) >= 0 
-            },
-            'Average time to harvest': { 
-                value: cm.avgDays, 
-                change: calcChange(cm.avgDays, pm.avgDays), 
-                isPositive: (cm.avgDays - pm.avgDays) <= 0 
-            },
-            'Harvest frequency': { 
-                value: cm.frequency, 
-                change: calcChange(cm.frequency, pm.frequency), 
-                isPositive: (cm.frequency - pm.frequency) >= 0 
-            }
+          'Total harvests': {
+            value: cm.harvests,
+            change: calcChange(cm.harvests, pm.harvests),
+            isPositive: (cm.harvests - pm.harvests) >= 0
+          },
+          'Unique crops harvested': {
+            value: cm.uniqueCrops,
+            change: calcChange(cm.uniqueCrops, pm.uniqueCrops),
+            isPositive: (cm.uniqueCrops - pm.uniqueCrops) >= 0
+          },
+          'Average time to harvest': {
+            value: cm.avgDays,
+            change: calcChange(cm.avgDays, pm.avgDays),
+            isPositive: (cm.avgDays - pm.avgDays) <= 0
+          },
+          'Harvest frequency': {
+            value: cm.frequency,
+            change: calcChange(cm.frequency, pm.frequency),
+            isPositive: (cm.frequency - pm.frequency) >= 0
+          }
         });
 
       } catch (err) {
@@ -312,7 +313,7 @@ const HarvestsInsights = () => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', `harvest_insights_${new Date().toISOString().slice(0,10)}.csv`);
+    link.setAttribute('download', `harvest_insights_${new Date().toISOString().slice(0, 10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -320,10 +321,10 @@ const HarvestsInsights = () => {
 
   const { current: currentKey, previous: previousKey } = metricKeyMap[selectedMetric];
   const currentMetric = metricsData[selectedMetric];
-  
+
   const currentRangeLabel = dateOptions.find(opt => opt.value === dateRange)?.label || 'Last 30 days';
   const currentCompareLabel = compareOptions.find(opt => opt.value === compareType)?.label || 'None';
-  
+
   // Only show the comparison visual on the CHART if explicitly requested
   const isComparing = compareType !== 'none';
 
@@ -355,7 +356,7 @@ const HarvestsInsights = () => {
   const CustomTooltip = ({ active, payload, label }) => {
     if (!active || !payload || !payload.length) return null;
     const data = payload[0].payload;
-    
+
     return (
       <div style={{
         backgroundColor: "#fff",
@@ -374,7 +375,7 @@ const HarvestsInsights = () => {
           const displayDate = isCurrent ? label : data.datePrev;
           const rawValue = p.value;
           let formattedValue;
-          
+
           if (selectedMetric === 'Average time to harvest') {
             formattedValue = `${Number(rawValue).toFixed(1)} days`;
           } else if (selectedMetric === 'Harvest frequency') {
@@ -411,10 +412,10 @@ const HarvestsInsights = () => {
     const mainColor = '#047857';
 
     const previousProps = {
-        name: currentCompareLabel,
-        dataKey: previousKey,
-        stroke: prevColor,
-        fill: prevColor,
+      name: currentCompareLabel,
+      dataKey: previousKey,
+      stroke: prevColor,
+      fill: prevColor,
     };
 
     switch (selectedChart) {
@@ -425,8 +426,8 @@ const HarvestsInsights = () => {
             <YAxis />
             <Tooltip cursor={{ fill: "#F5F5F5" }} content={<CustomTooltip />} />
             <Legend content={renderLegend} />
-            <Bar dataKey={currentKey} fill={mainColor} radius={[4,4,0,0]} name="Current" />
-            {isComparing && <Bar {...previousProps} radius={[4,4,0,0]} />}
+            <Bar dataKey={currentKey} fill={mainColor} radius={[4, 4, 0, 0]} name="Current" />
+            {isComparing && <Bar {...previousProps} radius={[4, 4, 0, 0]} />}
           </BarChart>
         );
       case 'Area chart':
@@ -461,7 +462,7 @@ const HarvestsInsights = () => {
 
   return (
     <main className="harvests-main">
-      
+
       {/* 1. Header Title */}
       <div className="harvests-header" style={{ marginBottom: '0' }}>
         <h1 style={{ marginBottom: '10px' }}>Harvests insights</h1>
@@ -472,67 +473,67 @@ const HarvestsInsights = () => {
 
       {/* 3. Actions Row */}
       <div className="harvests-actions" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
-          
-          {/* LEFT: Date & Compare */}
-          <div style={{ display: 'flex', gap: '10px' }}>
-            
-            {/* Date Range Dropdown */}
-            <div style={{ position: 'relative', display: 'inline-block' }}>
-              <button onClick={() => { setShowDateDropdown(!showDateDropdown); setShowCompareDropdown(false); }}>
-                <span style={{ color: '#6b7280' }}>Date range: </span>
-                <span style={{ color: '#047857', fontWeight: 500 }}>{currentRangeLabel}</span>
-                <FiChevronDown />
-              </button>
-              
-              {showDateDropdown && (
-                <div className="dropdown-menu" style={{ position: 'absolute', top: '110%', left: 0, backgroundColor: 'white', border: '1px solid #ddd', borderRadius: '6px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', zIndex: 50, minWidth: '160px', overflow: 'hidden' }}>
-                  {dateOptions.map((option) => (
-                    <div key={option.value}
-                      onClick={() => {
-                        setDateRange(option.value);
-                        setShowDateDropdown(false);
-                      }}
-                      className="dropdown-item"
-                      style={{ padding: '10px 16px', cursor: 'pointer', fontSize: '14px', backgroundColor: dateRange === option.value ? '#f3f4f6' : 'white' }}
-                    >
-                      {option.label}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
 
-            {/* Compare Dropdown */}
-            <div style={{ position: 'relative', display: 'inline-block' }}>
-              <button onClick={() => { setShowCompareDropdown(!showCompareDropdown); setShowDateDropdown(false); }}>
-                <span style={{ color: '#6b7280' }}>Compare: </span>
-                <span style={{ color: '#047857', fontWeight: 500 }}>{currentCompareLabel}</span>
-                <FiChevronDown />
-              </button>
+        {/* LEFT: Date & Compare */}
+        <div style={{ display: 'flex', gap: '10px' }}>
 
-              {showCompareDropdown && (
-                <div className="dropdown-menu" style={{ position: 'absolute', top: '110%', left: 0, backgroundColor: 'white', border: '1px solid #ddd', borderRadius: '6px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', zIndex: 50, minWidth: '160px', overflow: 'hidden' }}>
-                  {compareOptions.map((option) => (
-                    <div key={option.value}
-                      onClick={() => {
-                        setCompareType(option.value);
-                        setShowCompareDropdown(false);
-                      }}
-                      className="dropdown-item"
-                      style={{ padding: '10px 16px', cursor: 'pointer', fontSize: '14px', backgroundColor: compareType === option.value ? '#f3f4f6' : 'white' }}
-                    >
-                      {option.label}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+          {/* Date Range Dropdown */}
+          <div style={{ position: 'relative', display: 'inline-block' }}>
+            <button onClick={() => { setShowDateDropdown(!showDateDropdown); setShowCompareDropdown(false); }}>
+              <span style={{ color: '#6b7280' }}>Date range: </span>
+              <span style={{ color: '#047857', fontWeight: 500 }}>{currentRangeLabel}</span>
+              <FiChevronDown />
+            </button>
+
+            {showDateDropdown && (
+              <div className="dropdown-menu" style={{ position: 'absolute', top: '110%', left: 0, backgroundColor: 'white', border: '1px solid #ddd', borderRadius: '6px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', zIndex: 50, minWidth: '160px', overflow: 'hidden' }}>
+                {dateOptions.map((option) => (
+                  <div key={option.value}
+                    onClick={() => {
+                      setDateRange(option.value);
+                      setShowDateDropdown(false);
+                    }}
+                    className="dropdown-item"
+                    style={{ padding: '10px 16px', cursor: 'pointer', fontSize: '14px', backgroundColor: dateRange === option.value ? '#f3f4f6' : 'white' }}
+                  >
+                    {option.label}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
-          {/* RIGHT: Export Button */}
-          <button className="icon-btn" onClick={handleExport}>
-            <FiDownload /> Export
-          </button>
+          {/* Compare Dropdown */}
+          <div style={{ position: 'relative', display: 'inline-block' }}>
+            <button onClick={() => { setShowCompareDropdown(!showCompareDropdown); setShowDateDropdown(false); }}>
+              <span style={{ color: '#6b7280' }}>Compare: </span>
+              <span style={{ color: '#047857', fontWeight: 500 }}>{currentCompareLabel}</span>
+              <FiChevronDown />
+            </button>
+
+            {showCompareDropdown && (
+              <div className="dropdown-menu" style={{ position: 'absolute', top: '110%', left: 0, backgroundColor: 'white', border: '1px solid #ddd', borderRadius: '6px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', zIndex: 50, minWidth: '160px', overflow: 'hidden' }}>
+                {compareOptions.map((option) => (
+                  <div key={option.value}
+                    onClick={() => {
+                      setCompareType(option.value);
+                      setShowCompareDropdown(false);
+                    }}
+                    className="dropdown-item"
+                    style={{ padding: '10px 16px', cursor: 'pointer', fontSize: '14px', backgroundColor: compareType === option.value ? '#f3f4f6' : 'white' }}
+                  >
+                    {option.label}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* RIGHT: Export Button */}
+        <button className="icon-btn" onClick={handleExport}>
+          <FiDownload /> Export
+        </button>
       </div>
 
       {/* KPI Cards */}
@@ -540,7 +541,7 @@ const HarvestsInsights = () => {
         {metrics.map((metric, idx) => {
           const metricData = metricsData[metric];
           const displayValue = formatValue(metric, metricData.value);
-          
+
           // Neutral State Logic
           const isNeutral = Math.abs(metricData.change) === 0;
           const trendClass = isNeutral ? 'neutral' : (metricData.isPositive ? 'positive' : 'negative');
@@ -602,7 +603,7 @@ const HarvestsInsights = () => {
       <div className="harvests-table-card">
         <div className="table-header">
           <h3>Breakdown</h3>
-          <button><FiFilter /> Filter</button>
+          {/* REMOVED FILTER BUTTON */}
         </div>
         <table>
           <thead>
