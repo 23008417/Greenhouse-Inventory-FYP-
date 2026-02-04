@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate, Link } from 'react-router-dom'; // Added Link import
+import { useNavigate, Link } from 'react-router-dom';
 import './LandingPage.css';
 
 const LandingPage = () => {
@@ -16,7 +16,7 @@ const LandingPage = () => {
   return (
     <div className="main-container">
       <div className="left-section">
-        <img src="/cropflowinvert.png" alt="Cropflow Logo" className="logo-image" /> {/* Removed unnecessary braces */}
+        <img src="/cropflowinvert.png" alt="Cropflow Logo" className="logo-image" /> 
       </div>
       <div className="right-section">
         <h1>Bringing life to your space.</h1>
@@ -31,7 +31,7 @@ const LandingPage = () => {
         <p>Already have an account?</p>
         <button className="sign-in" onClick={handleSignIn}>Sign in</button>
         <hr className="separator" />
-        <Link to="/admin-login" className="admin-login-link"> {/* Updated path to match App.js */}
+        <Link to="/admin-login" className="admin-login-link"> 
           Admin? Login here.
         </Link>
       </div>

@@ -262,6 +262,7 @@
   color: #000;
   border: 1px solid #000;
   padding: 8px 20px;
+  border-radius: 999px;
   cursor: pointer;
   font-size: 12px;
   text-transform: uppercase;
