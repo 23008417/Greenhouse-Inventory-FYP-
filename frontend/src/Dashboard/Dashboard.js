@@ -1,43 +1,49 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import mqtt from 'mqtt'; // <--- NEW IMPORT
-import { 
+import mqtt from 'mqtt'; // MQTT client for live sensor stream
+import {
   FiFilter, FiChevronDown, FiArrowUp, FiArrowDown,
   FiCheckCircle, FiTrendingUp, FiTrendingDown, FiAlertCircle, FiChevronRight, FiCalendar,
   FiInfo, FiClock, FiAlertTriangle
 } from 'react-icons/fi';
 import {
-  BarChart, Bar, LineChart, Line, AreaChart, Area, PieChart, Pie, Cell, // <--- Add Pie, Cell
+  BarChart, Bar, LineChart, Line, AreaChart, Area, PieChart, Pie, Cell,
   XAxis, YAxis, Tooltip, ResponsiveContainer
-} from 'recharts';// <--- ADDED AreaChart, Area to this list
+} from 'recharts';
 import './Dashboard.css';
 import { API_URL } from '../apiConfig';
 
+// Dashboard: Admin analytics + live sensor monitoring
 const Dashboard = () => {
   const navigate = useNavigate();
+
+  // Main dashboard data from backend
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // NEW: State for the filter (Default to 7 days)
+  // Filter range (days) for sales history
   const [timeRange, setTimeRange] = useState(7);
 
-  // --- HIVEMQ LIVE SENSOR LOGIC (TEMP + HUMIDITY) ---
+  // Live sensor stream (temp + humidity) for charts
   const [sensorData, setSensorData] = useState([]);
 
-  // --- DANGER SYSTEM STATE ---
-  const clientRef = useRef(null); // To control HiveMQ from the button
-  const [alertSent, setAlertSent] = useState(false); // Prevent spamming DB (Temp)
-  const [alertSentHumidity, setAlertSentHumidity] = useState(false); // Prevent spamming DB (Humidity)
-  const [showDangerModal, setShowDangerModal] = useState(false); // Temp Popup
-  const [showHumidityDangerModal, setShowHumidityDangerModal] = useState(false); // Humidity Popup
+  // HiveMQ client reference (used by demo buttons)
+  const clientRef = useRef(null);
 
-  // --- DANGER THRESHOLDS ---
-  // Typical greenhouse high-humidity risk starts around 85% RH.
-  const HUMIDITY_DANGER_THRESHOLD = 85;
-  const TEMP_DANGER_THRESHOLD = 35.0;
+  // Danger flags to prevent repeated alert spam
+  const [alertSent, setAlertSent] = useState(false);
+  const [alertSentHumidity, setAlertSentHumidity] = useState(false);
 
-  // --- SENSOR ALERTS (LIVE) ---
+  // Modal popups for critical sensor states
+  const [showDangerModal, setShowDangerModal] = useState(false);
+  const [showHumidityDangerModal, setShowHumidityDangerModal] = useState(false);
+
+  // Thresholds for alerting
+  const HUMIDITY_DANGER_THRESHOLD = 85; // % RH
+  const TEMP_DANGER_THRESHOLD = 35.0;   // degrees C
+
+  // Local log of recent sensor alerts (persisted to localStorage)
   const [sensorAlerts, setSensorAlerts] = useState(() => {
     try {
       const stored = localStorage.getItem('sensorAlertsLog');
@@ -47,6 +53,7 @@ const Dashboard = () => {
     }
   });
 
+  // Add a new sensor alert to the top of the list
   const addSensorAlert = (alert) => {
     setSensorAlerts((current) => {
       const updated = [alert, ...current];
@@ -55,19 +62,21 @@ const Dashboard = () => {
     });
   };
 
+  // Clear the log (with confirmation)
   const clearSensorAlerts = () => {
     if (!window.confirm('Clear the sensor alert log?')) return;
     setSensorAlerts([]);
     localStorage.removeItem('sensorAlertsLog');
   };
 
+  // Persist sensor alerts log in localStorage
   useEffect(() => {
     try {
       localStorage.setItem('sensorAlertsLog', JSON.stringify(sensorAlerts));
     } catch {}
   }, [sensorAlerts]);
 
-  // --- FUNCTION: SAVE ALERT TO DATABASE ---
+  // Save auto alert for high temperature to DB as an announcement
   const triggerAutoAnnouncement = async (tempVal) => {
     if (alertSent) return; // Stop if we already warned recently
 
@@ -77,23 +86,23 @@ const Dashboard = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
-          title: `⚠️ CRITICAL: High Temp (${tempVal}°C)`,
+          title: `CRITICAL: High Temp (${tempVal} C)`,
           description: `Automated Sensor Alert: Greenhouse Zone A is overheating. Ventilation systems activated.`,
-          event_date: new Date().toISOString().split('T')[0], // Today
+          event_date: new Date().toISOString().split('T')[0],
           start_time: new Date().toLocaleTimeString(),
           location: 'Sensor Node A',
-          category: 'Maintenance', // Matches your DB Enum
-          audience: 'Staff'        // Internal Alert
+          category: 'Maintenance',
+          audience: 'Staff'
         })
       });
-      console.log("🚨 Critical Alert saved to DB!");
-      setAlertSent(true); // Lock it so we don't save 100 times
+      console.log(" Critical Alert saved to DB!");
+      setAlertSent(true);
     } catch (err) { console.error("Alert failed", err); }
   };
 
-  // --- FUNCTION: SAVE HUMIDITY ALERT TO DATABASE ---
+  // Save auto alert for high humidity to DB as an announcement
   const triggerHumidityAnnouncement = async (humVal) => {
-    if (alertSentHumidity) return; // Stop if we already warned recently
+    if (alertSentHumidity) return;
 
     try {
       const token = localStorage.getItem('token');
@@ -103,31 +112,31 @@ const Dashboard = () => {
         body: JSON.stringify({
           title: `CRITICAL: High Humidity (${humVal}%)`,
           description: `Automated Sensor Alert: Greenhouse Zone A humidity is too high. Dehumidification/ventilation advised.`,
-          event_date: new Date().toISOString().split('T')[0], // Today
+          event_date: new Date().toISOString().split('T')[0],
           start_time: new Date().toLocaleTimeString(),
           location: 'Sensor Node A',
-          category: 'Maintenance', // Matches your DB Enum
-          audience: 'Staff'        // Internal Alert
+          category: 'Maintenance',
+          audience: 'Staff'
         })
       });
       console.log("Critical humidity alert saved to DB!");
-      setAlertSentHumidity(true); // Lock it so we don't save 100 times
+      setAlertSentHumidity(true);
     } catch (err) { console.error("Humidity alert failed", err); }
   };
 
-  // --- HIVEMQ LIVE SENSOR LOGIC ---
+  // --- LIVE SENSOR STREAM (HiveMQ) ---
   useEffect(() => {
     // Connect to HiveMQ (Secure Port 8884)
     const client = mqtt.connect('wss://broker.hivemq.com:8884/mqtt');
     const topic = 'fyp/greenhouse/23008417/combined';
 
-    clientRef.current = client; // <--- SAVE CLIENT FOR BUTTON USE
+    clientRef.current = client;
 
     client.on('connect', () => {
-      console.log('✅ Connected to HiveMQ Cloud');
+      console.log('? Connected to HiveMQ Cloud');
       client.subscribe(topic);
 
-      // Normal Loop: Random 24-26 degrees
+      // Demo loop: publish random readings so charts animate
       const interval = setInterval(() => {
         const fakeTemp = (24 + Math.random() * 2).toFixed(1);
         const fakeHum = (55 + Math.random() * 10).toFixed(0);
@@ -143,14 +152,14 @@ const Dashboard = () => {
         const now = new Date();
         const timeLabel = now.getHours() + ':' + now.getMinutes() + ':' + now.getSeconds();
 
-        // --- THE DANGER CHECK ---
+        // --- DANGER CHECKS ---
         if (parseFloat(data.temp) > TEMP_DANGER_THRESHOLD) {
-          setShowDangerModal(true); // 1. Show Red Screen
-          triggerAutoAnnouncement(data.temp); // 2. Log to Database
+          setShowDangerModal(true);
+          triggerAutoAnnouncement(data.temp);
           addSensorAlert({
             id: `temp-${Date.now()}`,
             type: 'Temp',
-            value: `${data.temp}°C`,
+            value: `${data.temp}C`,
             time: now.toLocaleTimeString(),
             severity: 'high'
           });
@@ -167,6 +176,7 @@ const Dashboard = () => {
           });
         }
 
+        // Keep only the latest 20 points to keep charts readable
         setSensorData(current => {
           const updated = [...current, { time: timeLabel, temp: data.temp, hum: data.hum }];
           if (updated.length > 20) updated.shift();
@@ -175,16 +185,16 @@ const Dashboard = () => {
       } catch (err) { console.error(err); }
     });
 
+    // Cleanup MQTT connection on unmount
     return () => { if (client) client.end(); };
-  }, [alertSent, alertSentHumidity]); // Re-bind if alert status changes
+  }, [alertSent, alertSentHumidity]);
 
   // --- FETCH DASHBOARD DATA (FROM DATABASE) ---
   useEffect(() => {
-    // UPDATED: Now includes ?range=${timeRange}
     console.log(`Fetching from: ${API_URL}/api/admin/dashboard?range=${timeRange}`);
 
     const token = localStorage.getItem('token');
-    
+
     fetch(`${API_URL}/api/admin/dashboard?range=${timeRange}`, {
       headers: token ? { Authorization: `Bearer ${token}` } : {}
     })
@@ -208,8 +218,9 @@ const Dashboard = () => {
         setError(err.message);
         setLoading(false);
       });
-  }, [timeRange]); // <--- IMPORTANT: Re-runs fetch whenever 'timeRange' changes
+  }, [timeRange]);
 
+  // Loading / error states
   if (loading) return (
       <main className="dashboard-main">
         <div className="loading-container">
@@ -217,11 +228,11 @@ const Dashboard = () => {
           <p>Loading real-time data...</p>
         </div>
       </main>
-  );  
+  );
   if (error) return (
     <main className="dashboard-main">
       <div style={{ color: 'red', padding: '2rem' }}>
-        <h2>⚠️ Error Loading Dashboard</h2>
+        <h2> Error Loading Dashboard</h2>
         <p><strong>Reason:</strong> {error}</p>
         <p><strong>Fix:</strong> Ensure backend CORS allows this frontend domain.</p>
       </div>
@@ -235,7 +246,7 @@ const Dashboard = () => {
       <section className="overview-header">
         <h2>Your overview</h2>
         <div className="filters">
-         
+          {/* Placeholder for future filter buttons */}
         </div>
       </section>
 
@@ -256,7 +267,6 @@ const Dashboard = () => {
         <div className="stat-card">
           <span className="card-title">Total Customers</span>
           <div className="card-value">{data.stats.customers}</div>
-          {/* Kept this bottom icon for alignment with other cards */}
           <div className="card-change neutral"><FiInfo /> Registered</div>
         </div>
 
@@ -269,20 +279,20 @@ const Dashboard = () => {
 
       {/* --- MID ROW (CHARTS & LISTS) --- */}
       <section className="mid-row">
-        
+
        {/* 1. SALES LINE CHART (Revenue History) */}
         <div className="chart-card">
           {/* Header with Filter Dropdown */}
           <div className="chart-header" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
             <h4>Sales Performance</h4>
-            
-            <select 
-              value={timeRange} 
+
+            <select
+              value={timeRange}
               onChange={(e) => setTimeRange(Number(e.target.value))}
               style={{
-                padding: '4px 8px', 
-                borderRadius: '6px', 
-                border: '1px solid #d1d5db', 
+                padding: '4px 8px',
+                borderRadius: '6px',
+                border: '1px solid #d1d5db',
                 fontSize: '0.85rem',
                 color: '#374151',
                 outline: 'none',
@@ -299,27 +309,26 @@ const Dashboard = () => {
           <div className="chart-value">
             <div><span className="chart-label">Revenue</span><strong>${Number(data.stats.revenue).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong></div>
           </div>
-          
-          <div style={{ width: '100%', height: 200 }}>            <ResponsiveContainer>
+
+          <div style={{ width: '100%', height: 200 }}>
+            <ResponsiveContainer>
               {data.revenueTrend && data.revenueTrend.length > 0 ? (
                 <LineChart data={data.revenueTrend} margin={{ top: 20, right: 10, left: 0, bottom: 0 }}>
-                  <XAxis 
-                    dataKey="date" 
-                    fontSize={10} 
-                    axisLine={false} 
-                    tickLine={false} 
+                  <XAxis
+                    dataKey="date"
+                    fontSize={10}
+                    axisLine={false}
+                    tickLine={false}
                     tickFormatter={(str) => new Date(str).toLocaleDateString(undefined, {month:'short', day:'numeric'})}
                   />
-                  {/* --- NEW: Adds the vertical numbers with $ --- */}
-                  <YAxis 
-                    tickFormatter={(value) => `$${value}`} 
-                    fontSize={10} 
-                    axisLine={false} 
-                    tickLine={false} 
+                  <YAxis
+                    tickFormatter={(value) => `$${value}`}
+                    fontSize={10}
+                    axisLine={false}
+                    tickLine={false}
                     width={40}
                   />
 
-                  {/* --- UPDATED: Adds $ to the hover box --- */}
                   <Tooltip formatter={(value) => [`$${value}`, 'Revenue']} />
                   <Line type="monotone" dataKey="daily_revenue" stroke="#82ca9d" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} />
                 </LineChart>
@@ -331,9 +340,9 @@ const Dashboard = () => {
         {/* 2. LIVE HUMIDITY (BLUE) */}
         <div className="chart-card">
           <div className="chart-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h4>Live Humidity 💧</h4>
+            <h4>Live Humidity</h4>
 
-            {/* --- DEMO BUTTON: HUMIDITY SPIKE --- */}
+            {/* Demo button to simulate high humidity */}
             <button
               onClick={() => {
                 if (clientRef.current) {
@@ -370,16 +379,15 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* --- NEW: LIVE HIVEMQ TEMPERATURE --- */}
+        {/* 3. LIVE TEMPERATURE (RED) */}
         <div className="chart-card">
           <div className="chart-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h4>Live Greenhouse Temp 🔴</h4>
+            <h4>Live Greenhouse Temp</h4>
 
-            {/* --- SECRET DEMO BUTTON --- */}
+            {/* Demo button to simulate heatwave */}
             <button
               onClick={() => {
                 if (clientRef.current) {
-                  // Force publish 50°C to trigger the logic
                   clientRef.current.publish('fyp/greenhouse/23008417/combined', JSON.stringify({ temp: 50.0, hum: 20 }));
                 }
               }}
@@ -388,13 +396,14 @@ const Dashboard = () => {
                 padding: '4px 10px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 'bold', cursor: 'pointer'
               }}
             >
-              ⚠️ Simulate Heatwave
+              Simulate Heatwave
             </button>
           </div>
           <div className="chart-value">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>              <span className="chart-label">Current Temp</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span className="chart-label">Current Temp</span>
               <strong>
-                {sensorData.length > 0 ? sensorData[sensorData.length - 1].temp : '--'}°C
+                {sensorData.length > 0 ? sensorData[sensorData.length - 1].temp : '--'}C
               </strong>
             </div>
           </div>
@@ -407,42 +416,40 @@ const Dashboard = () => {
                     <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
-                
-                {/* UPDATED: Visible Time Axis */}
-                <XAxis 
-                    dataKey="time" 
-                    tick={{fontSize: 10}} 
+
+                <XAxis
+                    dataKey="time"
+                    tick={{fontSize: 10}}
                     interval="preserveStartEnd"
                 />
-                
-                {/* NEW: Temperature Scale Axis */}
-                <YAxis 
-                    domain={['auto', 'auto']} 
-                    tick={{fontSize: 10}} 
+
+                <YAxis
+                    domain={['auto', 'auto']}
+                    tick={{fontSize: 10}}
                     width={30}
                 />
-                
+
                 <Tooltip />
-                <Area 
-                    type="monotone" 
-                    dataKey="temp" 
-                    stroke="#ef4444" 
-                    fillOpacity={1} 
-                    fill="url(#colorTemp)" 
-                    isAnimationActive={false} 
+                <Area
+                    type="monotone"
+                    dataKey="temp"
+                    stroke="#ef4444"
+                    fillOpacity={1}
+                    fill="url(#colorTemp)"
+                    isAnimationActive={false}
                 />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        {/* 3. RECENT ORDERS LIST (Replaces Capacity) */}
+        {/* 4. RECENT ORDERS LIST */}
         <div className="card capacity-card">
           <div className="card-header">
             <h4>Recent Orders <FiClock /></h4>
             <div className="card-actions">
-             <button 
-                className="view-all-btn" 
+             <button
+                className="view-all-btn"
                 onClick={() => navigate('/dashboard/customers')}
               >
                 View all
@@ -457,8 +464,6 @@ const Dashboard = () => {
             </div>
             {data.recentOrders.map((order) => (
               <div key={order.order_id} className="capacity-item">
-                
-                {/* CHANGED HERE: Shows Name instead of ID */}
                 <span className="location" style={{fontWeight: '600'}}>
                     {order.first_name || 'Customer'}
                 </span>
@@ -475,7 +480,7 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Low Stock Alerts (Swapped into Top Crops position) */}
+        {/* 5. LOW STOCK ALERTS */}
         <div className="card alerts-card">
           <div className="card-header">
             <h4>Low Stock Alerts <span className="alert-badge red">{data.alerts.length}</span> <FiInfo /></h4>
@@ -483,9 +488,9 @@ const Dashboard = () => {
           <div className="alert-list">
             {data.alerts.length === 0 ? <div className="alert-item"><span>Inventory levels are good!</span></div> : null}
             {data.alerts.map((item, index) => (
-              <div 
-                key={index} 
-                className="alert-item" 
+              <div
+                key={index}
+                className="alert-item"
                 onClick={() => navigate('/dashboard/plants/inventory')}
                 style={{cursor: 'pointer'}}
                 title="Click to manage inventory"
@@ -500,7 +505,7 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* --- SENSOR ALERTS TIMELINE (LIVE) --- */}
+        {/* 6. SENSOR ALERTS TIMELINE */}
         <div className="card capacity-card">
           <div className="card-header">
             <h4>Sensor Alerts <FiAlertTriangle /></h4>
@@ -541,14 +546,11 @@ const Dashboard = () => {
             {sensorAlerts.length === 0 && <div style={{padding:'10px'}}>No sensor alerts yet.</div>}
           </div>
         </div>
-
-        
-
       </section>
 
-      {/* --- BOTTOM ROW (ALERTS) --- */}
+      {/* --- BOTTOM ROW (Charts) --- */}
       <section className="centered-chart-row">
-        {/* --- TOP PERFORMING CROPS (Full Width) --- */}
+        {/* Top Performing Crops */}
         <div className="chart-card pie-card-wide">
           <div className="chart-header">
             <h4>Top Performing Crops</h4>
@@ -565,7 +567,7 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* --- NEW: INVENTORY BREAKDOWN PIE CHART --- */}
+        {/* Inventory Breakdown Pie Chart */}
         <div className="chart-card pie-card-wide">
           <div className="chart-header">
             <h4>Inventory Composition</h4>
@@ -577,7 +579,7 @@ const Dashboard = () => {
                   data={data.categoryData}
                   cx="50%"
                   cy="50%"
-                  innerRadius={90} /* Makes it a Donut Chart (Modern) */
+                  innerRadius={90}
                   outerRadius={120}
                   paddingAngle={5}
                   dataKey="value"
@@ -601,7 +603,7 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* --- EMERGENCY POPUP --- */}
+        {/* Emergency popup for high temperature */}
         {showDangerModal && (
           <div style={{
             position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
@@ -632,7 +634,7 @@ const Dashboard = () => {
           </div>
         )}
 
-        {/* --- HUMIDITY EMERGENCY POPUP --- */}
+        {/* Emergency popup for high humidity */}
         {showHumidityDangerModal && (
           <div style={{
             position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
@@ -662,8 +664,6 @@ const Dashboard = () => {
             </div>
           </div>
         )}
-       
-
       </section>
     </main>
   );

@@ -1148,6 +1148,7 @@ app.post('/api/paypal/capture', authenticate, async (req, res) => {
    - Updated for Staff vs. Customer audiences
 ===================== */
 
+// Get announcements for EventsPage and StoreEvents (optional ?type=Customer filter)
 // 1. Get announcements (With optional filter ?type=Customer)
 app.get('/api/announcements', async (req, res) => {
   const { type } = req.query; // Check if frontend wants specific audience
@@ -1174,6 +1175,7 @@ app.get('/api/announcements', async (req, res) => {
   }
 });
 
+// Create a new announcement (used by EventsPage form)
 // 2. Create a new announcement
 app.post('/api/announcements', authenticate, async (req, res) => {
   if (req.user.role !== 'Admin') return res.status(403).json({ error: 'Admin only' });
@@ -1196,6 +1198,7 @@ app.post('/api/announcements', authenticate, async (req, res) => {
   }
 });
 
+// Delete an announcement by id
 // 3. Delete an announcement
 app.delete('/api/announcements/:id', authenticate, async (req, res) => {
   if (req.user.role !== 'Admin') return res.status(403).json({ error: 'Admin only' });
@@ -1209,6 +1212,7 @@ app.delete('/api/announcements/:id', authenticate, async (req, res) => {
   }
 });
 
+// Update an announcement by id (edit mode)
 // 4. Edit an announcement
 app.put('/api/announcements/:id', authenticate, async (req, res) => {
   if (req.user.role !== 'Admin') return res.status(403).json({ error: 'Admin only' });
@@ -1231,6 +1235,7 @@ app.put('/api/announcements/:id', authenticate, async (req, res) => {
   }
 });
 
+// Increment interest counter for public events
 // 5. Increment Interest (Simplified)
 app.post('/api/announcements/:id/interest', async (req, res) => {
   try {
@@ -1246,6 +1251,7 @@ app.post('/api/announcements/:id/interest', async (req, res) => {
   }
 });
 
+// Decrement interest counter (never below zero)
 // 6. Decrement Interest (Simplified)
 app.post('/api/announcements/:id/uninterest', async (req, res) => {
   try {
@@ -1623,6 +1629,7 @@ app.use('/uploads', express.static('uploads'));
 
 /* =========================================
    ADMIN DASHBOARD API (Admin-only)
+   Provides analytics for Dashboard page
    ========================================= */
 app.get('/api/admin/dashboard', authenticate, async (req, res) => {
   // Only allow Admin users to access dashboard analytics

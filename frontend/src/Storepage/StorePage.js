@@ -31,7 +31,7 @@ const StorePage = ({ onLogout, user, cartItems, setCartItems }) => {
   const [error, setError] = useState('');
   const [toast, setToast] = useState(null);
   const navigate = useNavigate();
-  // Notification State
+  // Event popup state (new events alert on store page)
   const [showEventPopup, setShowEventPopup] = useState(false);
   const [newEventsCount, setNewEventsCount] = useState(0);
 
@@ -78,6 +78,7 @@ const StorePage = ({ onLogout, user, cartItems, setCartItems }) => {
     fetchProducts();
   }, []);
 
+  // Check for new events for popup
   // --- CHECK FOR NEW EVENTS ---
   // --- CHECK FOR NEW EVENTS (ID Based) ---
   useEffect(() => {
@@ -108,7 +109,8 @@ if (latestTime > lastSeenTime) {
       .catch(err => console.error("Event check failed", err));
   }, [user]);
 
-  // --- PASTE THIS HERE ---
+  // Go to events page and mark as seen
+  
   const handleGoToEvents = () => {
     fetch(`${API_URL}/api/announcements?type=Customer`)
         .then(res => res.json())
@@ -172,6 +174,7 @@ if (latestTime > lastSeenTime) {
         <div className="store-right-controls">
           
           
+          {/* Events nav button + badge (store popup uses this count) */}
           {/* UPDATED: Events Button with Red Badge */}
           {/* UPDATED: Events Button with Fixed Badge Positioning */}
           <div 
@@ -302,6 +305,7 @@ if (latestTime > lastSeenTime) {
         </div>
       )}
 
+      {/* Popup shown when new events are detected */}
       {/* --- NEW EVENT POPUP --- */}
       {showEventPopup && (
         <div className="event-modal-overlay">

@@ -2,17 +2,27 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MdArrowBack, MdEvent, MdAccessTime, MdLocationOn, MdTimer, MdThumbUp, MdCheck } from 'react-icons/md';
 import { API_URL } from '../apiConfig';
-import './StorePage.css'; // Reusing your existing CSS
+import './StorePage.css'; // Use store page CSS
 
+// StoreEvents: shows public events for customers
 const StoreEvents = () => {
+  // List of events from backend
   const [events, setEvents] = useState([]);
+
+  // Loading flag
   const [loading, setLoading] = useState(true);
+
+  // Countdown text for each event (id -> text)
   const [countdowns, setCountdowns] = useState({});
+
+  // Filter by category
   const [categoryFilter, setCategoryFilter] = useState('All');
+
+  // For back button
   const navigate = useNavigate();
 
   useEffect(() => {
-    // FETCH ONLY CUSTOMER EVENTS
+    // Get only Customer events
     fetch(`${API_URL}/api/announcements?type=Customer`)
       .then(res => res.json())
       .then(data => {
@@ -28,23 +38,24 @@ const StoreEvents = () => {
   useEffect(() => {
     if (events.length === 0) return;
 
+    // Update countdowns every second
     const updateTimers = () => {
       const newCountdowns = {};
       const now = new Date();
 
       events.forEach(event => {
-        // 1. Get Date parts
-        // This creates a date object and automatically adjusts it to your local timezone (SGT)
+        // Build date from event date + time
         const tempDate = new Date(event.event_date);
         const y = tempDate.getFullYear();
-        const m = tempDate.getMonth() + 1; // getMonth is 0-indexed
+        const m = tempDate.getMonth() + 1; // 0-based
         const d = tempDate.getDate();
 
-        // 2. Get Time parts
+        // Default time if missing
         let hours = 9;
         let minutes = 0;
         let timePart = event.start_time || "09:00 AM";
 
+        // Parse AM/PM time
         if (timePart.toLowerCase().includes('am') || timePart.toLowerCase().includes('pm')) {
           const match = timePart.match(/(\d+):(\d+)\s*(am|pm)/i);
           if (match) {
@@ -55,12 +66,13 @@ const StoreEvents = () => {
             if (modifier === 'pm') hours += 12;
           }
         } else {
+          // Parse 24h time
           const parts = timePart.split(':');
           hours = parseInt(parts[0] || 9, 10);
           minutes = parseInt(parts[1] || 0, 10);
         }
 
-        // Create the final target date in local time
+        // Target time for countdown
         const target = new Date(y, m - 1, d, hours, minutes, 0);
         const diff = target.getTime() - now.getTime();
 
@@ -80,7 +92,7 @@ const StoreEvents = () => {
           newCountdowns[event.id] = "LIVE NOW";
         }
       });
-      setCountdowns(newCountdowns); // Move this OUTSIDE the forEach
+      setCountdowns(newCountdowns);
     };
 
     const interval = setInterval(updateTimers, 1000);
@@ -88,36 +100,37 @@ const StoreEvents = () => {
     return () => clearInterval(interval);
   }, [events]);
 
-  // Helper to check if this browser has already clicked
+  // Check if this user already clicked interest
   const hasUserClicked = (eventId) => {
     return localStorage.getItem(`interest_${eventId}`);
   };
 
-  // Force re-render helper
+  // Dummy state to force refresh
   const [dummyState, setDummyState] = useState(0);
 
+  // Toggle interest (like/unlike)
   const handleInterest = async (id) => {
     const isClicked = hasUserClicked(id);
     const endpoint = isClicked ? 'uninterest' : 'interest';
     const math = isClicked ? -1 : 1;
 
     try {
-      // 1. Call API
+      // Call API
       await fetch(`${API_URL}/api/announcements/${id}/${endpoint}`, { method: 'POST' });
 
-      // 2. Update UI Counter Locally
+      // Update count in UI
       setEvents(prev => prev.map(e =>
         e.id === id ? { ...e, interested_count: (e.interested_count || 0) + math } : e
       ));
 
-      // 3. Toggle LocalStorage
+      // Save click in localStorage
       if (isClicked) {
         localStorage.removeItem(`interest_${id}`);
       } else {
         localStorage.setItem(`interest_${id}`, 'true');
       }
 
-      // 4. Force refresh to update button color immediately
+      // Force button to refresh
       setDummyState(prev => prev + 1);
 
     } catch (err) {
@@ -125,15 +138,18 @@ const StoreEvents = () => {
     }
   };
 
+  // Build category list
   const baseCategories = ['Workshop', 'Harvest', 'Wellness', 'Education', 'Social'];
   const categories = ['All', ...Array.from(new Set([...baseCategories, ...events.map(e => e.category)].filter(Boolean)))];
+
+  // Filter events by selected category
   const filteredEvents = categoryFilter === 'All'
     ? events
     : events.filter(e => e.category === categoryFilter);
 
   return (
     <div className="store-page">
-      {/* Simple Header for Navigation */}
+      {/* Back button */}
       <div className="store-back-btn-container">
         <button onClick={() => navigate('/storepage')} className="store-back-btn">
             <MdArrowBack /> Back to Shop
@@ -142,13 +158,13 @@ const StoreEvents = () => {
 
       <div className="store-content-wrapper" style={{marginTop: '0'}}>
         <main className="store-main-content">
-          
+
           <div className="store-events-header">
             <h1>Community Events</h1>
             <p>Workshops & Harvest Days</p>
           </div>
 
-          {/* Category Filter Bar */}
+          {/* Category filter buttons */}
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', margin: '0 0 16px 0' }}>
             {categories.map((cat) => (
               <button
@@ -194,7 +210,7 @@ const StoreEvents = () => {
                             <h3 className="store-event-title">{event.title}</h3>
                             <p className="store-event-desc">{event.description}</p>
                         </div>
-                        
+
                         <div className="store-event-meta">
                             <div><MdAccessTime size={16}/> {event.start_time}</div>
                             <div><MdLocationOn size={16}/> {event.location}</div>
@@ -206,7 +222,6 @@ const StoreEvents = () => {
                         width: '100%',
                         marginTop: '15px',
                         padding: '10px',
-                        // Green background if clicked, White if not
                         background: hasUserClicked(event.id) ? '#ecfdf5' : 'white',
                         color: '#059669',
                         border: '1px solid #059669',

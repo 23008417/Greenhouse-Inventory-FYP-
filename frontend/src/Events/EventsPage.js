@@ -1,9 +1,10 @@
 import React, { useEffect, useState, useRef } from 'react';
-// FIX: Using react-icons instead of lucide-react
+// Icon set for UI actions and labels
 import { FiClock, FiMapPin, FiPlus, FiTrash2, FiX, FiEdit, FiUsers, FiCopy } from 'react-icons/fi';
-import { API_URL } from '../apiConfig'; 
+import { API_URL } from '../apiConfig';
 import './EventsPage.css';
 
+// Map event categories to background images used on cards
 const CATEGORY_IMAGES = {
   // Workshop (Working): Planting/Hands-on
   Workshop: "https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?auto=format&fit=crop&w=800&q=80",
@@ -18,30 +19,41 @@ const CATEGORY_IMAGES = {
   // Social (NEW): People gathering/Community
   Social: "https://images.unsplash.com/photo-1543269865-cbf427effbad?auto=format&fit=crop&w=800&q=80",
 
+  // Maintenance (sensor/system alerts)
   Maintenance:"https://images.unsplash.com/vector-1738926671790-51ac3dac60a0?q=80&w=1180&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
   // General (Working): Greenhouse wide shot
   General: "https://images.unsplash.com/photo-1466692476868-aef1dfb1e735?auto=format&fit=crop&w=800&q=80"
 };
 
+// EventsPage: Admin UI to create, edit, duplicate, filter, and delete announcements
 const EventsPage = () => {
+  // Reference to the scroll container so we can auto-scroll to the form
   const containerRef = useRef(null);
+
+  // Event list returned from the backend
   const [events, setEvents] = useState([]);
+
+  // Show/hide the create/edit form
   const [showForm, setShowForm] = useState(false);
 
-  const [editingId, setEditingId] = useState(null); // Null = Create Mode, Number = Edit Mode
-  const [selectedIds, setSelectedIds] = useState([]); // Bulk select
+  // Null = create mode, number = edit mode
+  const [editingId, setEditingId] = useState(null);
 
-  // Form State
+  // Track which event cards are selected for bulk actions
+  const [selectedIds, setSelectedIds] = useState([]);
+
+  // Form State (controlled inputs)
   const [formData, setFormData] = useState({
-    title: '', 
-    event_date: '', 
-    start_time: '', 
-    location: '', 
-    description: '', 
-    category: 'Workshop', 
-    audience: 'Staff' // <--- ADD THIS
+    title: '',
+    event_date: '',
+    start_time: '',
+    location: '',
+    description: '',
+    category: 'Workshop',
+    audience: 'Staff' // Internal vs public
   });
 
+  // Filter by audience type
   const [filterType, setFilterType] = useState('All');
 
   // 1. Fetch Events from Database
@@ -58,24 +70,26 @@ const EventsPage = () => {
     }
   };
 
+  // Load events once on page mount
   useEffect(() => { fetchEvents(); }, []);
 
-  // 2. Handle Delete
+  // 2. Delete a single event
   const handleDelete = async (id) => {
     if (!window.confirm("Remove this announcement from the digital signage?")) return;
-    
+
     try {
       const token = localStorage.getItem('token');
       await fetch(`${API_URL}/api/announcements/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       });
-      fetchEvents(); // Refresh list
+      fetchEvents(); // Refresh list after deletion
     } catch (err) {
       alert("Failed to delete");
     }
   };
 
+  // 2b. Delete multiple selected events in one action
   const handleBulkDelete = async () => {
     if (selectedIds.length === 0) return;
     if (!window.confirm(`Delete ${selectedIds.length} selected events?`)) return;
@@ -97,12 +111,14 @@ const EventsPage = () => {
     }
   };
 
+  // Toggle one card checkbox on/off
   const toggleSelect = (id) => {
     setSelectedIds((current) =>
       current.includes(id) ? current.filter((x) => x !== id) : [...current, id]
     );
   };
 
+  // Select or clear all visible cards
   const toggleSelectAll = () => {
     if (selectedIds.length === filteredEvents.length) {
       setSelectedIds([]);
@@ -111,40 +127,42 @@ const EventsPage = () => {
     }
   };
 
-  // 3. Handle Create OR Update
+  // 3. Create OR Update an announcement (single handler)
   const handleSubmit = async (e) => {
     e.preventDefault();
     const token = localStorage.getItem('token');
-    
-    // Determine URL and Method based on mode
-    const url = editingId 
-      ? `${API_URL}/api/announcements/${editingId}` 
+
+    // Determine URL and HTTP method based on mode
+    const url = editingId
+      ? `${API_URL}/api/announcements/${editingId}`
       : `${API_URL}/api/announcements`;
-      
+
     const method = editingId ? 'PUT' : 'POST';
 
     try {
       const res = await fetch(url, {
         method: method,
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
         body: JSON.stringify(formData)
       });
-      
+
       if (res.ok) {
         setShowForm(false);
-        setEditingId(null); // Reset mode
-        setFormData({ title: '', event_date: '', start_time: '', location: '', description: '', category: 'Workshop', audience: 'Staff' });        fetchEvents(); // Refresh list
+        setEditingId(null); // Reset to create mode
+        setFormData({ title: '', event_date: '', start_time: '', location: '', description: '', category: 'Workshop', audience: 'Staff' });
+        fetchEvents(); // Refresh list
       }
     } catch (err) {
       alert("Failed to save announcement");
     }
   };
 
+  // Prefill form with an existing event for editing
   const handleEdit = (event) => {
-    // NEW: Create a local date object first to fix the timezone shift
+    // Create a local date object first to avoid timezone shift
     const localDate = new Date(event.event_date);
     const yyyy = localDate.getFullYear();
     const mm = String(localDate.getMonth() + 1).padStart(2, '0');
@@ -153,7 +171,7 @@ const EventsPage = () => {
 
     setFormData({
       title: event.title,
-      event_date: formattedDate, // <--- FIXED LINE
+      event_date: formattedDate,
       start_time: event.start_time,
       location: event.location,
       description: event.description,
@@ -162,6 +180,8 @@ const EventsPage = () => {
     });
     setEditingId(event.id);
     setShowForm(true);
+
+    // Scroll to top so the form is visible
     if (containerRef.current) {
       containerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
@@ -169,6 +189,7 @@ const EventsPage = () => {
     }
   };
 
+  // Duplicate an event for quick weekly scheduling
   const handleDuplicate = (event) => {
     const baseDate = new Date(event.event_date);
     const nextWeek = new Date(baseDate);
@@ -189,6 +210,8 @@ const EventsPage = () => {
     });
     setEditingId(null); // Create mode
     setShowForm(true);
+
+    // Scroll to the form
     if (containerRef.current) {
       containerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
@@ -196,7 +219,7 @@ const EventsPage = () => {
     }
   };
 
-  // Helper to format date "2026-01-25" -> Month: JAN, Day: 25
+  // Helper to format date "2026-01-25" -> { month: "JAN", day: 25 }
   const formatDate = (dateString) => {
     // This ensures the badge matches the local day, not the UTC day
     const date = new Date(dateString);
@@ -224,10 +247,10 @@ const EventsPage = () => {
           </div>
 
           <div style={{ display: 'flex', gap: '10px' }}>
-            {/* NEW: Color-Coordinated Filter Tabs */}
+            {/* Audience filter tabs */}
             <div style={{ display: 'flex', background: 'white', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '4px', gap: '4px', marginRight: '10px' }}>
 
-              {/* 1. VIEW ALL BUTTON */}
+              {/* 1. View all */}
               <button
                 onClick={() => setFilterType('All')}
                 style={{
@@ -240,7 +263,7 @@ const EventsPage = () => {
                 View All
               </button>
 
-              {/* 2. STAFF BUTTON (Matches Staff Badge) */}
+              {/* 2. Staff-only */}
               <button
                 onClick={() => setFilterType('Staff')}
                 style={{
@@ -253,7 +276,7 @@ const EventsPage = () => {
                 Internal Staff
               </button>
 
-              {/* 3. CUSTOMER BUTTON (Matches Customer Badge) */}
+              {/* 3. Public customers */}
               <button
                 onClick={() => setFilterType('Customer')}
                 style={{
@@ -267,6 +290,7 @@ const EventsPage = () => {
               </button>
             </div>
 
+            {/* Toggle form open/close */}
             <button
               className="register-btn"
               style={{ width: 'auto', padding: '0.8rem 1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
@@ -308,22 +332,23 @@ const EventsPage = () => {
         </div>
       )}
 
-      {/* NEW EVENT FORM (Toggles Open/Close) */}
+      {/* Create/Edit Form (Toggles Open/Close) */}
       {showForm && (
         <div className="event-card" style={{ padding: '2rem', marginBottom: '2rem', border: '2px solid #059669' }}>
           <h3 style={{ marginBottom: '1rem' }}>
             {editingId ? 'Edit Announcement' : 'New Announcement'}
-          </h3>          <form onSubmit={handleSubmit} style={{display: 'grid', gap: '1rem'}}>
-            {/* --- NEW: Audience Selector --- */}
+          </h3>
+          <form onSubmit={handleSubmit} style={{display: 'grid', gap: '1rem'}}>
+            {/* Target audience selector */}
             <div style={{display: 'flex', flexDirection: 'column', gap: '0.5rem'}}>
               <label style={{fontWeight: '600', color: '#374151', fontSize: '0.9rem'}}>Target Audience</label>
-              <select 
+              <select
                 value={formData.audience}
                 onChange={e => setFormData({...formData, audience: e.target.value})}
                 style={{
-                    padding: '0.6rem', 
-                    borderRadius: '5px', 
-                    border: '1px solid #ccc', 
+                    padding: '0.6rem',
+                    borderRadius: '5px',
+                    border: '1px solid #ccc',
                     backgroundColor: 'white',
                     cursor: 'pointer'
                 }}
@@ -333,7 +358,7 @@ const EventsPage = () => {
               </select>
             </div>
 
-            {/* --- NEW: Category Selector (Sets the Image) --- */}
+            {/* Category selector (controls card image) */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               <label style={{ fontWeight: '600', color: '#374151', fontSize: '0.9rem' }}>Event Category (Image)</label>
               <select
@@ -355,45 +380,56 @@ const EventsPage = () => {
               </select>
             </div>
 
-            <input 
-              type="text" placeholder="Title (e.g., Mass Harvest)" required 
-              className="input-field" 
+            {/* Title */}
+            <input
+              type="text" placeholder="Title (e.g., Mass Harvest)" required
+              className="input-field"
               value={formData.title}
               onChange={e => setFormData({...formData, title: e.target.value})}
               style={{padding: '0.5rem', border: '1px solid #ccc', borderRadius: '5px'}}
             />
+
+            {/* Date + Time */}
             <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem'}}>
-              <input 
-                type="date" required 
+              <input
+                type="date" required
                 value={formData.event_date}
                 onChange={e => setFormData({...formData, event_date: e.target.value})}
                 style={{padding: '0.5rem', border: '1px solid #ccc', borderRadius: '5px'}}
               />
-              <input 
-                type="text" placeholder="Time (e.g., 9:00 AM)" 
+              <input
+                type="text" placeholder="Time (e.g., 9:00 AM)"
                 value={formData.start_time}
                 onChange={e => setFormData({...formData, start_time: e.target.value})}
                 style={{padding: '0.5rem', border: '1px solid #ccc', borderRadius: '5px'}}
               />
             </div>
-            <input 
-              type="text" placeholder="Location" 
+
+            {/* Location */}
+            <input
+              type="text" placeholder="Location"
               value={formData.location}
               onChange={e => setFormData({...formData, location: e.target.value})}
               style={{padding: '0.5rem', border: '1px solid #ccc', borderRadius: '5px'}}
             />
-            <textarea 
+
+            {/* Description */}
+            <textarea
               placeholder="Description/Instructions" rows="3"
               value={formData.description}
               onChange={e => setFormData({...formData, description: e.target.value})}
               style={{padding: '0.5rem', border: '1px solid #ccc', borderRadius: '5px'}}
             ></textarea>
+
+            {/* Submit */}
             <button type="submit" className="register-btn">
               {editingId ? 'Update Announcement' : 'Publish to Screens'}
-            </button>          </form>
+            </button>
+          </form>
         </div>
       )}
 
+      {/* Event cards grid */}
       <div className="events-grid">
         {filteredEvents.map((event) => {
           const { month, day } = formatDate(event.event_date);
@@ -409,10 +445,11 @@ const EventsPage = () => {
                   Select
                 </label>
               </div>
-              
+
               <div className="event-image">
-                {/* Fallback image based on category if you want, or just static for now */}
-                <img src={CATEGORY_IMAGES[event.category] || CATEGORY_IMAGES.Workshop} alt={event.title} />                <div className="date-badge">
+                {/* Image is chosen by category (fallback to Workshop) */}
+                <img src={CATEGORY_IMAGES[event.category] || CATEGORY_IMAGES.Workshop} alt={event.title} />
+                <div className="date-badge">
                   <span className="date-month">{month}</span>
                   <span className="date-day">{day}</span>
                 </div>
@@ -421,12 +458,12 @@ const EventsPage = () => {
               <div className="event-content">
                 <h3 className="event-title">
                   {event.title}
-                  {/* Visual Badge */}
+                  {/* Audience badge */}
                   <span style={{
-                      fontSize: '0.65rem', 
-                      padding: '2px 8px', 
-                      borderRadius: '12px', 
-                      marginLeft: '10px', 
+                      fontSize: '0.65rem',
+                      padding: '2px 8px',
+                      borderRadius: '12px',
+                      marginLeft: '10px',
                       verticalAlign: 'middle',
                       border: '1px solid rgba(0,0,0,0.1)',
                       backgroundColor: event.audience === 'Customer' ? '#dbeafe' : '#f3f4f6',
@@ -437,7 +474,7 @@ const EventsPage = () => {
                   </span>
                 </h3>
                 <p className="event-desc">{event.description}</p>
-                
+
                 <div className="event-details">
                   <div className="detail-row">
                     <FiClock className="icon" /> {event.start_time}
@@ -445,7 +482,8 @@ const EventsPage = () => {
                   <div className="detail-row">
                     <FiMapPin className="icon" /> {event.location}
                   </div>
-                  {/* Only show interest count for Public Customer events */}
+
+                  {/* Only show interest count for public customer events */}
                   {event.audience === 'Customer' && (
                     <div className="detail-row" style={{ marginTop: '0.5rem', color: '#059669', fontWeight: 'bold' }}>
                       <FiUsers className="icon" /> {event.interested_count || 0} People Interested
@@ -453,33 +491,26 @@ const EventsPage = () => {
                   )}
                 </div>
 
-                {/* <button 
-                  className="register-btn" 
-                  style={{backgroundColor: '#fee2e2', color: '#b91c1c', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem'}}
-                  onClick={() => handleDelete(event.id)}
-                >
-                  <FiTrash2 /> Remove Announcement
-                </button> */}
-
+                {/* Action buttons */}
                 <div style={{display: 'flex', gap: '10px', marginTop: 'auto'}}>
-                    <button 
-                      className="register-btn" 
+                    <button
+                      className="register-btn"
                       style={{backgroundColor: '#eff6ff', color: '#1e40af', border: '1px solid #dbeafe', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', flex: 1}}
                       onClick={() => handleEdit(event)}
                     >
                       <FiEdit /> Edit
                     </button>
 
-                    <button 
-                      className="register-btn" 
+                    <button
+                      className="register-btn"
                       style={{backgroundColor: '#ecfdf5', color: '#047857', border: '1px solid #bbf7d0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', flex: 1}}
                       onClick={() => handleDuplicate(event)}
                     >
                       <FiCopy /> Duplicate
                     </button>
 
-                    <button 
-                      className="register-btn" 
+                    <button
+                      className="register-btn"
                       style={{backgroundColor: '#fee2e2', color: '#b91c1c', border: '1px solid #fecaca', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', flex: 1}}
                       onClick={() => handleDelete(event.id)}
                     >

@@ -1,27 +1,31 @@
+/* Linked to EventsPage.js: styles the Events/Announcements management UI */
 .events-container {
   padding: 2rem;
   /* Massive padding at bottom to force content up */
-  padding-bottom: 10rem; 
+  padding-bottom: 10rem;
   background-color: #f9fafb;
-  
-  /* FIX: Subtract header height (approx 80px) from full height */
-  min-height: calc(100vh - 100px); 
-  
+
+  /* Subtract header height from full height */
+  min-height: calc(100vh - 100px);
+
   /* Ensure this container handles the scroll if the layout doesn't */
-  overflow-y: auto; 
+  overflow-y: auto;
 }
 
+/* EventsPage.css: .events-header for EventsPage.js (events/announcements UI) */
 .events-header {
   text-align: center;
   margin-bottom: 3rem;
 }
 
+/* EventsPage.css: .events-header h1 for EventsPage.js (events/announcements UI) */
 .events-header h1 {
   font-size: 2.5rem;
   color: #064e3b; /* Dark Green */
   margin-bottom: 0.5rem;
 }
 
+/* EventsPage.css: .events-header p for EventsPage.js (events/announcements UI) */
 .events-header p {
   color: #6b7280;
   font-size: 1.1rem;
@@ -47,17 +51,20 @@
   flex-direction: column;
 }
 
+/* EventsPage.css: .event-card:hover for EventsPage.js (events/announcements UI) */
 .event-card:hover {
   transform: translateY(-5px);
   box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
 }
 
+/* EventsPage.css: .event-image for EventsPage.js (events/announcements UI) */
 .event-image {
   height: 180px;
   background-color: #e5e7eb;
   position: relative;
 }
 
+/* EventsPage.css: .event-image img for EventsPage.js (events/announcements UI) */
 .event-image img {
   width: 100%;
   height: 100%;
@@ -77,6 +84,7 @@
   min-width: 60px;
 }
 
+/* EventsPage.css: .date-month for EventsPage.js (events/announcements UI) */
 .date-month {
   display: block;
   font-size: 0.75rem;
@@ -85,6 +93,7 @@
   text-transform: uppercase;
 }
 
+/* EventsPage.css: .date-day for EventsPage.js (events/announcements UI) */
 .date-day {
   display: block;
   font-size: 1.5rem;
@@ -101,6 +110,7 @@
   flex-grow: 1;
 }
 
+/* EventsPage.css: .event-title for EventsPage.js (events/announcements UI) */
 .event-title {
   font-size: 1.25rem;
   font-weight: 700;
@@ -108,6 +118,7 @@
   margin-bottom: 0.5rem;
 }
 
+/* EventsPage.css: .event-desc for EventsPage.js (events/announcements UI) */
 .event-desc {
   color: #6b7280;
   font-size: 0.9rem;
@@ -115,6 +126,7 @@
   line-height: 1.5;
 }
 
+/* EventsPage.css: .event-details for EventsPage.js (events/announcements UI) */
 .event-details {
   margin-top: auto; /* Pushes to bottom */
   display: flex;
@@ -125,12 +137,14 @@
   margin-bottom: 1.5rem;
 }
 
+/* EventsPage.css: .detail-row for EventsPage.js (events/announcements UI) */
 .detail-row {
   display: flex;
   align-items: center;
   gap: 0.5rem;
 }
 
+/* Primary action button style */
 .register-btn {
   width: 100%;
   padding: 0.75rem;
@@ -143,6 +157,7 @@
   transition: background 0.2s;
 }
 
+/* EventsPage.css: .register-btn:hover for EventsPage.js (events/announcements UI) */
 .register-btn:hover {
   background-color: #047857;
 }
@@ -155,6 +170,7 @@
 }
 
 .event-select,
+/* EventsPage.css: .bulk-select for EventsPage.js (events/announcements UI) */
 .bulk-select {
   display: inline-flex;
   align-items: center;
@@ -168,6 +184,7 @@
 }
 
 .event-select input,
+/* EventsPage.css: .bulk-select input for EventsPage.js (events/announcements UI) */
 .bulk-select input {
   width: 18px;
   height: 18px;
