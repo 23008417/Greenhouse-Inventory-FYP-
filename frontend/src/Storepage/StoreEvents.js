@@ -21,8 +21,9 @@ const StoreEvents = () => {
   // For back button
   const navigate = useNavigate();
 
+  
   useEffect(() => {
-    // Get only Customer events
+    // Get only Customer events for public store page
     fetch(`${API_URL}/api/announcements?type=Customer`)
       .then(res => res.json())
       .then(data => {
@@ -34,17 +35,17 @@ const StoreEvents = () => {
         setLoading(false);
       });
   }, []);
-
+  // Countdown logic for event cards (LIVE NOW / time left)
   useEffect(() => {
     if (events.length === 0) return;
 
-    // Update countdowns every second
+    // Countdown timer: recompute time left every second
     const updateTimers = () => {
       const newCountdowns = {};
       const now = new Date();
 
       events.forEach(event => {
-        // Build date from event date + time
+        // Build date from event date + time (local timezone)
         const tempDate = new Date(event.event_date);
         const y = tempDate.getFullYear();
         const m = tempDate.getMonth() + 1; // 0-based
@@ -55,7 +56,7 @@ const StoreEvents = () => {
         let minutes = 0;
         let timePart = event.start_time || "09:00 AM";
 
-        // Parse AM/PM time
+        // Parse AM/PM time (or fall back to 24-hour)
         if (timePart.toLowerCase().includes('am') || timePart.toLowerCase().includes('pm')) {
           const match = timePart.match(/(\d+):(\d+)\s*(am|pm)/i);
           if (match) {
@@ -95,12 +96,12 @@ const StoreEvents = () => {
       setCountdowns(newCountdowns);
     };
 
-    const interval = setInterval(updateTimers, 1000);
+    const interval = setInterval(updateTimers, 1000); // 1s refresh
     updateTimers();
     return () => clearInterval(interval);
   }, [events]);
 
-  // Check if this user already clicked interest
+  // Check if this user already clicked interest (browser-local)
   const hasUserClicked = (eventId) => {
     return localStorage.getItem(`interest_${eventId}`);
   };
@@ -108,7 +109,7 @@ const StoreEvents = () => {
   // Dummy state to force refresh
   const [dummyState, setDummyState] = useState(0);
 
-  // Toggle interest (like/unlike)
+  // Toggle interest (like/unlike) and sync count to backend
   const handleInterest = async (id) => {
     const isClicked = hasUserClicked(id);
     const endpoint = isClicked ? 'uninterest' : 'interest';
@@ -138,11 +139,11 @@ const StoreEvents = () => {
     }
   };
 
-  // Build category list
+  // Build category list for filter buttons (base + any from events)
   const baseCategories = ['Workshop', 'Harvest', 'Wellness', 'Education', 'Social'];
   const categories = ['All', ...Array.from(new Set([...baseCategories, ...events.map(e => e.category)].filter(Boolean)))];
 
-  // Filter events by selected category
+  // Filter events by selected category (front-end only)
   const filteredEvents = categoryFilter === 'All'
     ? events
     : events.filter(e => e.category === categoryFilter);
@@ -187,17 +188,21 @@ const StoreEvents = () => {
           </div>
 
           {loading ? (
+            // Loading state while events are fetched
             <div className="store-no-results"><p>Loading...</p></div>
           ) : (
             <div className="store-product-grid">
+                {/* Empty state if the category filter returns nothing */}
                 {filteredEvents.length === 0 && (
                     <div className="store-no-results" style={{gridColumn: '1/-1'}}>
                         <p>No events found for this category.</p>
                     </div>
                 )}
 
+                {/* Render one card per event */}
                 {filteredEvents.map(event => (
                     <div key={event.id} className="store-event-card">
+                    {/* Countdown badge (LIVE NOW or time left) */}
                     <div className={`store-ticker-badge ${countdowns[event.id] === "LIVE NOW" ? 'is-live' : ''}`}>
                       <span className="ticker-dot"></span>
                       <MdTimer size={12} style={{ marginRight: '4px' }} />
@@ -216,6 +221,7 @@ const StoreEvents = () => {
                             <div><MdLocationOn size={16}/> {event.location}</div>
                         </div>
 
+                    {/* Interest button toggles per user/browser */}
                     <button
                       onClick={() => handleInterest(event.id)}
                       style={{

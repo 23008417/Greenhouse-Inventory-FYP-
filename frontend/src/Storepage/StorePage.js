@@ -31,7 +31,7 @@ const StorePage = ({ onLogout, user, cartItems, setCartItems }) => {
   const [error, setError] = useState('');
   const [toast, setToast] = useState(null);
   const navigate = useNavigate();
-  // Event popup state (new events alert on store page)
+  // Event popup state (new customer events alert on store page)
   const [showEventPopup, setShowEventPopup] = useState(false);
   const [newEventsCount, setNewEventsCount] = useState(0);
 
@@ -78,9 +78,7 @@ const StorePage = ({ onLogout, user, cartItems, setCartItems }) => {
     fetchProducts();
   }, []);
 
-  // Check for new events for popup
-  // --- CHECK FOR NEW EVENTS ---
-  // --- CHECK FOR NEW EVENTS (ID Based) ---
+  // --- CHECK FOR NEW EVENTS (by updated_at time) ---
   useEffect(() => {
     if (!user || !user.id) return;
 
@@ -89,27 +87,25 @@ const StorePage = ({ onLogout, user, cartItems, setCartItems }) => {
       .then(events => {
         if (events.length === 0) return;
 
-        // Get the Highest ID in the database list
-        // (e.g., if IDs are [1, 2, 5], the max is 5)
-        // Get the newest update time in the list
-const latestTime = Math.max(...events.map(e => new Date(e.updated_at).getTime()));
+        // Newest update time in the list
+        const latestTime = Math.max(...events.map(e => new Date(e.updated_at).getTime()));
 
-// Check what time the user last saw an update
-const storageKey = `lastSeenEventTime_${user.id}`;
-const lastSeenTime = parseInt(localStorage.getItem(storageKey) || '0');
+        // Last seen time for this user (stored in browser)
+        const storageKey = `lastSeenEventTime_${user.id}`;
+        const lastSeenTime = parseInt(localStorage.getItem(storageKey) || '0');
 
-// If the latest update in the DB is newer than what we last saw
-if (latestTime > lastSeenTime) {
-  // Count how many events have been created or edited since our last visit
-  const newItemsCount = events.filter(e => new Date(e.updated_at).getTime() > lastSeenTime).length;
-  setNewEventsCount(newItemsCount);
-  setShowEventPopup(true);
-}
+        // If DB has newer events, show the popup
+        if (latestTime > lastSeenTime) {
+          // Count how many items are new since last visit
+          const newItemsCount = events.filter(e => new Date(e.updated_at).getTime() > lastSeenTime).length;
+          setNewEventsCount(newItemsCount);
+          setShowEventPopup(true);
+        }
       })
       .catch(err => console.error("Event check failed", err));
   }, [user]);
 
-  // Go to events page and mark as seen
+  // Go to events page and mark latest events as seen
   
   const handleGoToEvents = () => {
     fetch(`${API_URL}/api/announcements?type=Customer`)
@@ -118,6 +114,7 @@ if (latestTime > lastSeenTime) {
             if (events.length > 0) {
                 const latestTime = Math.max(...events.map(e => new Date(e.updated_at).getTime()));
                 const storageKey = `lastSeenEventTime_${user.id}`;
+                // Store latest time so popup won't show again for same events
                 localStorage.setItem(storageKey, latestTime.toString());
             }
             navigate('/store/events');
