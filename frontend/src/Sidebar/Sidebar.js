@@ -1,66 +1,66 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { 
-  FiHome, 
-  FiPackage, 
-  FiShoppingCart, 
-  FiUsers, 
-  FiBarChart2, 
+import {
+  FiHome,
+  FiPackage,
+  FiShoppingCart,
+  FiUsers,
+  FiBarChart2,
   FiShoppingBag,
   FiChevronDown,
   FiChevronRight
 } from 'react-icons/fi';
 import './Sidebar.css';
- 
+
 const NavItem = ({ icon, children, to }) => {
   const location = useLocation();
   const active = location.pathname === to;
- 
+
   return (
-<Link to={to} className={`menu-item ${active ? 'active' : ''}`}>
-<div className="menu-item-content">
+    <Link to={to} className={`menu-item ${active ? 'active' : ''}`}>
+      <div className="menu-item-content">
         {icon}
-<span>{children}</span>
-</div>
-</Link>
+        <span>{children}</span>
+      </div>
+    </Link>
   );
 };
- 
+
 const ExpandableNavItem = ({ icon, children, subItems }) => {
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(true);
   // Check if any sub-item is active
   const hasActiveChild = subItems.some(item => location.pathname === item.to);
- 
+
   return (
-<div className="expandable-menu-item">
-<div 
+    <div className="expandable-menu-item">
+      <div
         className={`menu-item ${hasActiveChild ? 'has-active-child' : ''}`}
         onClick={() => setIsOpen(!isOpen)}
->
-<div className="menu-item-content">
+      >
+        <div className="menu-item-content">
           {icon}
-<span>{children}</span>
-</div>
+          <span>{children}</span>
+        </div>
         {isOpen ? <FiChevronDown className="dropdown-icon" /> : <FiChevronRight className="dropdown-icon" />}
-</div>
+      </div>
       {isOpen && (
-<div className="submenu">
+        <div className="submenu">
           {subItems.map((item, index) => (
-<Link 
+            <Link
               key={index}
-              to={item.to} 
+              to={item.to}
               className={`submenu-item ${location.pathname === item.to ? 'active' : ''}`}
->
+            >
               {item.label}
-</Link>
+            </Link>
           ))}
-</div>
+        </div>
       )}
-</div>
+    </div>
   );
 };
- 
+
 const Sidebar = () => {
   const plantsSubItems = [
     { label: 'Inventory', to: '/dashboard/plants/inventory' },
@@ -70,38 +70,38 @@ const Sidebar = () => {
   ];
   const reportsSubItems = [
     { label: 'Sales Insights', to: '/dashboard/reports/salesinsights' },
-    { label: 'Harvests Insights', to: '/dashboard/reports/harvestinsights' },
+    { label: 'Planting Insights', to: '/dashboard/reports/plantinginsights' },
   ];
   // /Reports/SalesInsights/SalesInsights'
- 
+
   return (
-<nav className="sidebar">
-<ul className="sidebar-menu">
-<NavItem to="/dashboard" icon={<FiHome />}>
+    <nav className="sidebar">
+      <ul className="sidebar-menu">
+        <NavItem to="/dashboard" icon={<FiHome />}>
           Home
-</NavItem>
-<ExpandableNavItem icon={<FiPackage />} subItems={plantsSubItems}>
+        </NavItem>
+        <ExpandableNavItem icon={<FiPackage />} subItems={plantsSubItems}>
           Plants
-</ExpandableNavItem>
- 
+        </ExpandableNavItem>
+
         <NavItem to="/dashboard/customers" icon={<FiUsers />}>
           Customers
-</NavItem>
- 
+        </NavItem>
+
         <ExpandableNavItem icon={<FiBarChart2 />} subItems={reportsSubItems}>
           Reports
-</ExpandableNavItem>
- 
+        </ExpandableNavItem>
+
         <NavItem to="/dashboard/event" icon={<FiShoppingBag />}>
           Event
-</NavItem>
- 
-         <NavItem to="/dashboard/crop-management" icon={<FiPackage />}>
+        </NavItem>
+
+        <NavItem to="/dashboard/crop-management" icon={<FiPackage />}>
           Crop Management
-</NavItem>
-</ul>
-</nav>
+        </NavItem>
+      </ul>
+    </nav>
   );
 };
- 
+
 export default Sidebar;

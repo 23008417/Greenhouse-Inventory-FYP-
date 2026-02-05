@@ -7,7 +7,7 @@ import Inventory from './Inventory/inventory';
 import AddPlant from './Inventory/AddPlant';
 import EditPlant from './Inventory/EditPlant';
 import StockHistory from './Inventory/StockHistory';
-import HarvestsInsights from './Reports/HarvestsInsights/HarvestsInsights';
+import PlantingInsights from './Reports/PlantingInsights/PlantingInsights';
 import SalesInsights from './Reports/SalesInsights/SalesInsights';
 import Customers from './Customers/Customers';
 import CropManagement from './CropManagement/CropManagement';
@@ -49,17 +49,17 @@ const DashboardLayout = () => {
             path="plants/growing-systems/add-system-type/new"
             element={<AddSystemTypeForm />}
           /> */}
-          
+
           <Route path="customers" element={<Customers />} />
-          <Route path="reports/harvestinsights" element={<HarvestsInsights />} />
+          <Route path="reports/plantinginsights" element={<PlantingInsights />} />
           <Route path="reports/salesinsights" element={<SalesInsights />} />
 
           <Route path="event" element={<EventsPage />} />
 
-         
+
           <Route path="crop-management" element={<CropManagement />} />
           <Route path="crops/add" element={<AddCrop />} />
- 
+
 
           {/* Fallback */}
           <Route path="*" element={<Navigate to="." />} />
