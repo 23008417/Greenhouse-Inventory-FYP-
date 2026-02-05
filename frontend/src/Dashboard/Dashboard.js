@@ -126,12 +126,14 @@ const Dashboard = () => {
 
   // --- LIVE SENSOR STREAM (HiveMQ) ---
   useEffect(() => {
-    // Connect to HiveMQ (Secure Port 8884)
+    // Connect to HiveMQ over WebSockets (MQTT broker)
     const client = mqtt.connect('wss://broker.hivemq.com:8884/mqtt');
+    // Topic = channel name where sensors publish readings
     const topic = 'fyp/greenhouse/23008417/combined';
 
     clientRef.current = client;
 
+    // When connected, subscribe and (demo) publish fake readings
     client.on('connect', () => {
       console.log('? Connected to HiveMQ Cloud');
       client.subscribe(topic);
@@ -146,13 +148,15 @@ const Dashboard = () => {
       return () => clearInterval(interval);
     });
 
+    // Receive messages for the topic and update charts/alerts
     client.on('message', (receivedTopic, message) => {
       try {
+        // Parse raw JSON string into usable numbers
         const data = JSON.parse(message.toString());
         const now = new Date();
         const timeLabel = now.getHours() + ':' + now.getMinutes() + ':' + now.getSeconds();
 
-        // --- DANGER CHECKS ---
+        // --- DANGER CHECKS: popup + staff announcement ---
         if (parseFloat(data.temp) > TEMP_DANGER_THRESHOLD) {
           setShowDangerModal(true);
           triggerAutoAnnouncement(data.temp);
