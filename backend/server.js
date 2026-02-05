@@ -1274,55 +1274,112 @@ app.post('/api/announcements/:id/uninterest', async (req, res) => {
 ===================== */
 app.get('/api/sales/insights', authenticate, async (req, res) => {
   if (req.user.role !== 'Admin') return res.status(403).json({ error: 'Admin only' });
- 
-  // 1. Determine Duration (Days)
+
   const range = req.query.range;
-  const days = range === 'last_7_days' ? 7 : 
-               range === 'last_90_days' ? 90 : 
-               range === 'last_year' ? 365 : 30; // Default 30
- 
-  // 2. Determine Comparison Offset
   const compareType = req.query.compare || 'none';
-  let compareOffset = 0;
-  let hasComparison = false;
- 
-  if (compareType === 'previous_period') {
-    compareOffset = days; 
-    hasComparison = true;
-  } else if (compareType === 'previous_week') {
-    compareOffset = 7;
-    hasComparison = true;
-  } else if (compareType === 'previous_month') {
-    compareOffset = 30;
-    hasComparison = true;
-  } else if (compareType === 'previous_year') {
-    compareOffset = 365;
-    hasComparison = true;
-  }
- 
+
+  let days;
+  let startDateStr, endDateStr;
+
   try {
-    // --- Helper Query Function ---
-    const getAggregates = (startOffset, duration) => {
+    // 1. Handle Date Ranges
+    if (range === 'custom') {
+      const startDate = req.query.start_date;
+      const endDate = req.query.end_date;
+
+      if (!startDate || !endDate) return res.status(400).json({ error: 'Custom range requires start_date and end_date' });
+
+      startDateStr = startDate;
+      endDateStr = endDate;
+
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      days = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+
+    } else if (range === 'all_time') {
+      // Find the very first order date
+      const [minDateResult] = await pool.query("SELECT MIN(order_date) as first_date FROM orders");
+
+      const firstDate = minDateResult[0].first_date ? new Date(minDateResult[0].first_date) : new Date();
+      const today = new Date();
+
+      startDateStr = firstDate.toISOString().split('T')[0];
+      endDateStr = today.toISOString().split('T')[0];
+
+      days = Math.ceil((today - firstDate) / (1000 * 60 * 60 * 24)) + 1;
+
+    } else {
+      // Predefined ranges
+      days = range === 'last_7_days' ? 7 : range === 'last_90_days' ? 90 : 30;
+
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setDate(endDate.getDate() - (days - 1));
+
+      endDateStr = endDate.toISOString().split('T')[0];
+      startDateStr = startDate.toISOString().split('T')[0];
+    }
+
+    // 2. Determine Comparison Dates
+    let prevStartDateStr = '';
+    let prevEndDateStr = '';
+    let hasComparison = false;
+
+    if (range !== 'all_time') {
+      if (compareType === 'custom_compare') {
+        if (req.query.compare_start_date && req.query.compare_end_date) {
+          prevStartDateStr = req.query.compare_start_date;
+          prevEndDateStr = req.query.compare_end_date;
+          hasComparison = true;
+        }
+      } else {
+        let compareOffset = 0;
+        if (compareType === 'previous_period') {
+          compareOffset = days;
+          hasComparison = true;
+        } else if (compareType === 'previous_week') {
+          compareOffset = 7;
+          hasComparison = true;
+        } else if (compareType === 'previous_month') {
+          compareOffset = 30;
+          hasComparison = true;
+        } else if (compareType === 'previous_year') {
+          compareOffset = 365;
+          hasComparison = true;
+        }
+
+        if (hasComparison) {
+          const calcPrevDate = (dateStr, offsetDays) => {
+            const d = new Date(dateStr);
+            d.setDate(d.getDate() - offsetDays);
+            return d.toISOString().split('T')[0];
+          };
+          prevStartDateStr = calcPrevDate(startDateStr, compareOffset);
+          prevEndDateStr = calcPrevDate(endDateStr, compareOffset);
+        }
+      }
+    }
+
+    // 3. AGGREGATE QUERY (Updated to use specific dates)
+    const getAggregates = (start, end) => {
       return pool.query(`
         SELECT 
           COUNT(*) as orders, 
           COALESCE(SUM(total_amount), 0) as revenue,
           COALESCE(SUM((SELECT SUM(quantity_purchased) FROM order_items WHERE order_id = orders.order_id)), 0) as crops
         FROM orders 
-        WHERE order_date >= DATE_SUB(NOW(), INTERVAL ? DAY) 
-        AND order_date < DATE_SUB(NOW(), INTERVAL ? DAY)
-      `, [startOffset + duration, startOffset]);
+        WHERE order_date >= ? AND order_date <= ?
+      `, [start, end]);
     };
- 
-    const getDailyData = (startOffset, duration) => {
-      // UPDATED SQL: 
-      // Changed '%d' (01-31) to '%e' (1-31) to remove leading zero
+
+    // 4. DAILY DATA QUERY (Updated to use specific dates and fix GROUP BY)
+    const getDailyData = (start, end) => {
       return pool.query(`
         SELECT 
           DATE_FORMAT(t1.order_date, '%e %b %Y') as date, 
-          MIN(t1.order_date) as raw_date,
+          DATE(t1.order_date) as raw_date,
           COUNT(t1.order_id) as orders, 
-          SUM(t1.total_amount) as revenue, 
+          COALESCE(SUM(t1.total_amount), 0) as revenue, 
           COALESCE(SUM(t2.crops_count), 0) as crops 
         FROM orders t1
         LEFT JOIN (
@@ -1330,99 +1387,107 @@ app.get('/api/sales/insights', authenticate, async (req, res) => {
           FROM order_items 
           GROUP BY order_id
         ) t2 ON t1.order_id = t2.order_id
-        WHERE t1.order_date >= DATE_SUB(NOW(), INTERVAL ? DAY)
-        AND t1.order_date < DATE_SUB(NOW(), INTERVAL ? DAY)
-        GROUP BY date
+        WHERE t1.order_date >= ? AND t1.order_date <= ?
+        GROUP BY raw_date, date
         ORDER BY raw_date ASC
-      `, [startOffset + duration, startOffset]);
+      `, [start, end]);
     };
- 
-    // --- Execute Queries ---
-    const [currentStats] = await getAggregates(0, days);
-    const [prevStats] = await getAggregates(days, days);
-    const [currentRows] = await getDailyData(0, days);
- 
-    // We still fetch previous rows to get the metric values (revenue, orders, etc.)
+
+    // Execute Queries
+    const [currentStats] = await getAggregates(startDateStr, endDateStr);
+    const [currentRows] = await getDailyData(startDateStr, endDateStr);
+
+    let prevStats = [{}];
     let prevRows = [];
+
     if (hasComparison) {
-      const [rows] = await getDailyData(compareOffset, days);
-      prevRows = rows;
+      const [pStats] = await getAggregates(prevStartDateStr, prevEndDateStr);
+      prevStats = pStats;
+      const [pRows] = await getDailyData(prevStartDateStr, prevEndDateStr);
+      prevRows = pRows;
     }
- 
-    const curr = currentStats[0];
-    const prev = prevStats[0];
-    const calcChange = (c, p) => p === 0 ? 0 : ((c - p) / p) * 100;
- 
-    // --- Helper: Date Formatter (DD Mon YYYY) ---
-    const formatDate = (dateObj) => {
-        return dateObj.toLocaleDateString('en-GB', {
-            day: 'numeric', month: 'short', year: 'numeric'
-        });
+
+    const curr = currentStats[0] || {};
+    const prev = prevStats[0] || {};
+
+    const calcChange = (c, p) => p === 0 ? (c > 0 ? 100 : 0) : ((c - p) / p) * 100;
+
+    const m_revenue = {
+      value: curr.revenue || 0,
+      change: hasComparison ? calcChange(curr.revenue || 0, prev.revenue || 0) : 0
     };
- 
-    // --- Merge Chart Data ---
-    const chartData = currentRows.map((row, index) => {
-      const r = Number(row.revenue);
-      const o = Number(row.orders);
-      const c = Number(row.crops);
-      // Get previous metrics (if they exist in DB)
-      const prevRow = prevRows[index] || {}; 
-      const rPrev = hasComparison ? Number(prevRow.revenue || 0) : 0;
-      const oPrev = hasComparison ? Number(prevRow.orders || 0) : 0;
-      const cPrev = hasComparison ? Number(prevRow.crops || 0) : 0;
- 
-      // --- FIX FOR DATES ---
-      // 1. We use the raw_date from the current row
-      const currentRawDate = new Date(row.raw_date);
-      // 2. We CALCULATE the previous date mathematically (Current - Offset)
-      // This ensures we always have a date, even if the DB has no sales (N/A) for that day
-      let calculatedPrevDate = '';
-      if (hasComparison) {
-          const prevDateObj = new Date(currentRawDate);
-          prevDateObj.setDate(prevDateObj.getDate() - compareOffset);
-          calculatedPrevDate = formatDate(prevDateObj);
+    const m_orders = {
+      value: curr.orders || 0,
+      change: hasComparison ? calcChange(curr.orders || 0, prev.orders || 0) : 0
+    };
+    const m_crops = {
+      value: curr.crops || 0,
+      change: hasComparison ? calcChange(curr.crops || 0, prev.crops || 0) : 0
+    };
+
+    const currAvgOrder = curr.orders > 0 ? curr.revenue / curr.orders : 0;
+    const prevAvgOrder = prev.orders > 0 ? prev.revenue / prev.orders : 0;
+
+    const m_avgOrder = {
+      value: currAvgOrder,
+      change: hasComparison ? calcChange(currAvgOrder, prevAvgOrder) : 0
+    };
+
+    // Format Chart Data
+    const chartData = [];
+
+    const currMap = {};
+    currentRows.forEach(r => { currMap[r.date] = r; });
+
+    const prevMap = {};
+    prevRows.forEach(r => { prevMap[r.date] = r; });
+
+    const formatDate = (d) => d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+
+    const startDate = new Date(startDateStr);
+    const endDate = new Date(endDateStr);
+
+    let prevDateIterator = hasComparison ? new Date(prevStartDateStr) : null;
+
+    for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+      const dateStr = formatDate(d);
+
+      let prevDateStr = '';
+      if (hasComparison && prevDateIterator && prevDateIterator <= new Date(prevEndDateStr)) {
+        prevDateStr = formatDate(prevDateIterator);
       }
- 
-      return {
-        date: row.date, // This now includes Year from SQL (%d %b %Y)
-        // Use our Calculated Date instead of the DB date to avoid "N/A"
-        datePrev: calculatedPrevDate,
- 
-        revenue: r,
-        orders: o,
-        crops: c,
-        avgOrder: o > 0 ? r / o : 0,
- 
-        revenuePrev: rPrev,
-        ordersPrev: oPrev,
-        cropsPrev: cPrev,
-        avgOrderPrev: oPrev > 0 ? rPrev / oPrev : 0
-      };
-    });
- 
+
+      const cData = currMap[dateStr] || { orders: 0, revenue: 0, crops: 0 };
+      const pData = (hasComparison && prevDateStr) ? (prevMap[prevDateStr] || { orders: 0, revenue: 0, crops: 0 }) : { orders: 0, revenue: 0, crops: 0 };
+
+      chartData.push({
+        date: dateStr,
+        datePrev: prevDateStr || 'N/A',
+        revenue: Number(cData.revenue),
+        orders: Number(cData.orders),
+        crops: Number(cData.crops),
+        avgOrder: Number(cData.orders) > 0 ? Number(cData.revenue) / Number(cData.orders) : 0,
+
+        revenuePrev: hasComparison ? Number(pData.revenue) : 0,
+        ordersPrev: hasComparison ? Number(pData.orders) : 0,
+        cropsPrev: hasComparison ? Number(pData.crops) : 0,
+        avgOrderPrev: hasComparison ? (Number(pData.orders) > 0 ? Number(pData.revenue) / Number(pData.orders) : 0) : 0
+      });
+
+      if (prevDateIterator) prevDateIterator.setDate(prevDateIterator.getDate() + 1);
+    }
+
     res.json({
       success: true,
       metrics: {
-        total_revenue: { 
-            value: curr.revenue, 
-            change: calcChange(curr.revenue, prev.revenue) 
-        },
-        total_orders: { 
-            value: curr.orders, 
-            change: calcChange(curr.orders, prev.orders) 
-        },
-        total_crops_sold: { 
-            value: curr.crops, 
-            change: calcChange(curr.crops, prev.crops) 
-        },
-        average_order_value: { 
-            value: curr.orders > 0 ? curr.revenue / curr.orders : 0, 
-            change: calcChange((curr.orders > 0 ? curr.revenue / curr.orders : 0), (prev.orders > 0 ? prev.revenue / prev.orders : 0))
-        }
+        total_revenue: m_revenue,
+        total_orders: m_orders,
+        total_crops_sold: m_crops,
+        average_order_value: m_avgOrder
       },
       chartData: chartData
     });
- 
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to fetch sales insights' });
