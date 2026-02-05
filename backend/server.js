@@ -1714,7 +1714,7 @@ app.get('/api/admin/dashboard', authenticate, async (req, res) => {
   try {
     console.log("📊 Fetching dashboard data for admin:", req.user.id);
     
-    // 1. Get Stats
+    // 1. Get Stats (aggregated totals for top cards)
     const [orderStats] = await pool.query(`SELECT COUNT(*) as total_orders, COALESCE(SUM(total_amount), 0) as total_revenue FROM orders`);
     const [productStats] = await pool.query(`SELECT COUNT(*) as total_products FROM plant_inventory`);
     const [customerStats] = await pool.query(`SELECT COUNT(*) as total_customers FROM users WHERE role = 'Buyer'`);
@@ -1759,6 +1759,7 @@ app.get('/api/admin/dashboard', authenticate, async (req, res) => {
       value: Number(row.value) // <--- Crucial Fix
     }));
 
+    // Response shape is used directly by Dashboard.js (data.stats, chartData, etc.)
     res.json({
       success: true,
       stats: { 

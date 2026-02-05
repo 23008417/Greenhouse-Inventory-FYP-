@@ -195,6 +195,7 @@ const Dashboard = () => {
 
   // --- FETCH DASHBOARD DATA (FROM DATABASE) ---
   useEffect(() => {
+    // This calls /api/admin/dashboard and stores the response in `data`
     console.log(`Fetching from: ${API_URL}/api/admin/dashboard?range=${timeRange}`);
 
     const token = localStorage.getItem('token');
@@ -207,7 +208,7 @@ const Dashboard = () => {
         try {
           const json = JSON.parse(text);
           if (json.success) {
-            setData(json);
+            setData(json); // data.stats.* powers the top summary cards
           } else {
             setError(json.message || "Backend returned an error");
           }
@@ -271,7 +272,7 @@ const Dashboard = () => {
         <div className="stat-card">
           <span className="card-title">Total Customers</span>
           <div className="card-value">{data.stats.customers}</div>
-          <div className="card-change neutral"><FiInfo /> Registered</div>
+          <div className="card-change neutral"> Registered</div>
         </div>
 
         <div className="stat-card">
