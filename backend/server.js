@@ -1150,21 +1150,23 @@ app.post('/api/paypal/capture', authenticate, async (req, res) => {
 
 // Get announcements for EventsPage and StoreEvents (optional ?type=Customer filter)
 // 1. Get announcements (With optional filter ?type=Customer)
+// Fetch announcements (optionally filtered by audience)
 app.get('/api/announcements', async (req, res) => {
+  // Query param: ?type=Customer or ?type=Staff
   const { type } = req.query; // Check if frontend wants specific audience
   
   try {
-    // 1. The base query now ONLY looks for events Today or in the Future
+    // 1) Base query: only events today or in the future
     let query = 'SELECT * FROM announcements WHERE event_date >= CURDATE()';
     const params = [];
 
-    // 2. If the frontend sent ?type=Customer, we add AND instead of WHERE
+    // 2) Optional audience filter (Customer/Staff)
     if (type) {
       query += ' AND audience = ?';
       params.push(type);
     }
 
-    // 3. Keep events in order of date (soonest first)
+    // 3) Sort by soonest date first
     query += ' ORDER BY event_date ASC';
 
     const [events] = await pool.query(query, params);

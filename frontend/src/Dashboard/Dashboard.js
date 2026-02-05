@@ -346,7 +346,8 @@ const Dashboard = () => {
           <div className="chart-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <h4>Live Humidity</h4>
 
-            {/* Demo button to simulate high humidity */}
+            {/* Demo button: publishes a high humidity reading to HiveMQ
+               so the same message handler + danger checks run. */}
             <button
               onClick={() => {
                 if (clientRef.current) {
