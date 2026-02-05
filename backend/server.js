@@ -1719,7 +1719,7 @@ app.get('/api/admin/dashboard', authenticate, async (req, res) => {
     const [productStats] = await pool.query(`SELECT COUNT(*) as total_products FROM plant_inventory`);
     const [customerStats] = await pool.query(`SELECT COUNT(*) as total_customers FROM users WHERE role = 'Buyer'`);
     
-    // 2. Get Top Products
+    // 2. Get Top Products (total units sold per crop)
     const [topProducts] = await pool.query(`
       SELECT p.name, COALESCE(SUM(oi.quantity_purchased), 0) as sales
       FROM plant_inventory p LEFT JOIN order_items oi ON p.plant_id = oi.plant_id
@@ -1727,20 +1727,22 @@ app.get('/api/admin/dashboard', authenticate, async (req, res) => {
     `);
 
     // 3. Get Revenue History (Dynamic Range)
-        // Check if frontend sent a specific range (e.g. ?range=30), default to 7
-        const days = req.query.range ? Number(req.query.range) : 7;
+    // Frontend sends ?range=7/30/90 based on the dropdown filter
+    const days = req.query.range ? Number(req.query.range) : 7;
 
-        const [revenueRaw] = await pool.query(`
-            SELECT DATE_FORMAT(order_date, '%Y-%m-%d') as date, SUM(total_amount) as daily_revenue
-            FROM orders 
-            WHERE order_date >= DATE_SUB(NOW(), INTERVAL ? DAY) 
-            GROUP BY date 
-            ORDER BY date ASC
-        `, [days]); // <--- Pass the variable here
+    const [revenueRaw] = await pool.query(`
+      SELECT DATE_FORMAT(order_date, '%Y-%m-%d') as date, SUM(total_amount) as daily_revenue
+      FROM orders 
+      WHERE order_date >= DATE_SUB(NOW(), INTERVAL ? DAY) 
+      GROUP BY date 
+      ORDER BY date ASC
+    `, [days]);
     const revenueTrend = revenueRaw.map(row => ({ date: row.date, daily_revenue: parseFloat(row.daily_revenue) }));
     
     // 4. Get Alerts & Recent Orders
+    // Low stock list for dashboard alerts (threshold < 5)
     const [lowStock] = await pool.query(`SELECT name, quantity FROM plant_inventory WHERE quantity < 5 ORDER BY quantity ASC LIMIT 5`);
+    // Latest 5 orders with buyer name for the dashboard list
     const [recentOrders] = await pool.query(`
       SELECT o.order_id, u.first_name, o.total_amount, o.status, o.order_date
       FROM orders o JOIN users u ON o.buyer_id = u.id ORDER BY o.order_date DESC LIMIT 5
@@ -1753,10 +1755,10 @@ app.get('/api/admin/dashboard', authenticate, async (req, res) => {
       GROUP BY crop_category
     `);
 
-    // FIX: Convert "value" from String to Number so the Chart can read it
+    // Convert quantity totals to numbers so the chart can read them
     const categoryStats = categoryRows.map(row => ({
       name: row.name,
-      value: Number(row.value) // <--- Crucial Fix
+      value: Number(row.value)
     }));
 
     // Response shape is used directly by Dashboard.js (data.stats, chartData, etc.)
@@ -1768,11 +1770,11 @@ app.get('/api/admin/dashboard', authenticate, async (req, res) => {
         products: productStats[0].total_products, 
         customers: customerStats[0].total_customers 
       },
-      chartData: topProducts,
-      alerts: lowStock,
-      recentOrders: recentOrders,
+      chartData: topProducts, // consumed by Dashboard.js Top Performing Crops
+      alerts: lowStock, // consumed by Dashboard.js Low Stock Alerts
+      recentOrders: recentOrders, // consumed by Dashboard.js Recent Orders card
       revenueTrend: revenueTrend,
-      categoryData: categoryStats
+      categoryData: categoryStats // consumed by Dashboard.js Inventory Composition pie chart
     });
   } catch (err) {
     console.error("Dashboard Error:", err);

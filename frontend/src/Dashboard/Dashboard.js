@@ -22,7 +22,7 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Filter range (days) for sales history
+  // Filter range (days) for sales history; changes trigger a re-fetch
   const [timeRange, setTimeRange] = useState(7);
 
   // Live sensor stream (temp + humidity) for charts
@@ -54,6 +54,7 @@ const Dashboard = () => {
   });
 
   // Add a new sensor alert to the top of the list
+  // Adds a new alert to the top (keeps last 8)
   const addSensorAlert = (alert) => {
     setSensorAlerts((current) => {
       const updated = [alert, ...current];
@@ -62,7 +63,7 @@ const Dashboard = () => {
     });
   };
 
-  // Clear the log (with confirmation)
+  // Clear the log manually (does not depend on events page)
   const clearSensorAlerts = () => {
     if (!window.confirm('Clear the sensor alert log?')) return;
     setSensorAlerts([]);
@@ -70,6 +71,7 @@ const Dashboard = () => {
   };
 
   // Persist sensor alerts log in localStorage
+  // Persist sensor alerts so they survive refreshes
   useEffect(() => {
     try {
       localStorage.setItem('sensorAlertsLog', JSON.stringify(sensorAlerts));
@@ -156,7 +158,7 @@ const Dashboard = () => {
         const now = new Date();
         const timeLabel = now.getHours() + ':' + now.getMinutes() + ':' + now.getSeconds();
 
-        // --- DANGER CHECKS: popup + staff announcement ---
+        // --- DANGER CHECKS: popup + staff announcement + alert log ---
         if (parseFloat(data.temp) > TEMP_DANGER_THRESHOLD) {
           setShowDangerModal(true);
           triggerAutoAnnouncement(data.temp);
@@ -196,6 +198,7 @@ const Dashboard = () => {
   // --- FETCH DASHBOARD DATA (FROM DATABASE) ---
   useEffect(() => {
     // This calls /api/admin/dashboard and stores the response in `data`
+    // Changing timeRange (7/30/90) re-runs this effect to refresh revenueTrend
     console.log(`Fetching from: ${API_URL}/api/admin/dashboard?range=${timeRange}`);
 
     const token = localStorage.getItem('token');
@@ -290,9 +293,9 @@ const Dashboard = () => {
           {/* Header with Filter Dropdown */}
           <div className="chart-header" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
             <h4>Sales Performance</h4>
-
-            <select
-              value={timeRange}
+            
+            <select 
+              value={timeRange} 
               onChange={(e) => setTimeRange(Number(e.target.value))}
               style={{
                 padding: '4px 8px',
@@ -318,6 +321,7 @@ const Dashboard = () => {
           <div style={{ width: '100%', height: 200 }}>
             <ResponsiveContainer>
               {data.revenueTrend && data.revenueTrend.length > 0 ? (
+                // revenueTrend comes from backend /api/admin/dashboard?range=#
                 <LineChart data={data.revenueTrend} margin={{ top: 20, right: 10, left: 0, bottom: 0 }}>
                   <XAxis
                     dataKey="date"
@@ -468,6 +472,7 @@ const Dashboard = () => {
               <span>Status</span>
               <span>Amount</span>
             </div>
+            {/* recentOrders comes from /api/admin/dashboard */}
             {data.recentOrders.map((order) => (
               <div key={order.order_id} className="capacity-item">
                 <span className="location" style={{fontWeight: '600'}}>
@@ -493,6 +498,7 @@ const Dashboard = () => {
           </div>
           <div className="alert-list">
             {data.alerts.length === 0 ? <div className="alert-item"><span>Inventory levels are good!</span></div> : null}
+            {/* alerts comes from /api/admin/dashboard lowStock query */}
             {data.alerts.map((item, index) => (
               <div
                 key={index}
@@ -556,7 +562,7 @@ const Dashboard = () => {
 
       {/* --- BOTTOM ROW (Charts) --- */}
       <section className="centered-chart-row">
-        {/* Top Performing Crops */}
+        {/* Top Performing Crops (uses data.chartData from /api/admin/dashboard) */}
         <div className="chart-card pie-card-wide">
           <div className="chart-header">
             <h4>Top Performing Crops</h4>
@@ -573,7 +579,7 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Inventory Breakdown Pie Chart */}
+        {/* Inventory Breakdown Pie Chart (uses data.categoryData) */}
         <div className="chart-card pie-card-wide">
           <div className="chart-header">
             <h4>Inventory Composition</h4>
