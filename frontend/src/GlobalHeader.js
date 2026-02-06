@@ -14,7 +14,7 @@ const GlobalHeader = () => {
       </div> */}
       <div className="header-icons">
         {/* <FiGrid /> */}
-        <FiBell />
+        
         <div className="profile-badge">
         <img src="/RPLOGO.png" alt="RP Logo" className="profile-logo-img" />
           <span>RP Greenhouse</span>
